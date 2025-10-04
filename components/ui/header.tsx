@@ -7,7 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-4 py-2 border-b bg-background fixed w-full z-10">
+    <header className="flex items-center justify-between px-4 py-2 border-b bg-sidebar fixed w-full z-10">
       {/* Botão para abrir/fechar sidebar */}
       <div className="flex items-center gap-2">
         <SidebarTrigger />

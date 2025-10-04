@@ -1,17 +1,23 @@
 // components/Board.tsx
 "use client";
 
-import {Button} from "@/components/ui/button";
+import { Column } from "@/components/ui/column";
 
 export function Board() {
   return (
-    <div className="grid grid-cols-3 gap-6 py-10 px-20">
-        <Button variant="default">Default</Button>
-        <Button variant="destructive">Destructive</Button>
-        <Button variant="outline">Outline</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="ghost">Ghost</Button>
-        <Button variant="link">Link</Button>
+    <div className="grid grid-cols-3 gap-6 py-4 px-20">
+        <Column
+            title="To do" 
+            columnId="todo" 
+        />
+        <Column
+            title="In Progress" 
+            columnId="doing" 
+        />
+        <Column
+            title="Completed" 
+            columnId="done" 
+        />
     </div>
   );
 }
