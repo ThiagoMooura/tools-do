@@ -13,7 +13,6 @@ import {
   Trash2,
   ArrowRight,
   ArrowLeft,
-  GripVertical,
   Check,
 } from "lucide-react";
 import {
@@ -84,19 +83,9 @@ export function CardBoard({
       : "bg-green-700";
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <Card 
-        className="group relative cursor-grab active:cursor-grabbing" 
-        {...attributes}
-        {...listeners}
-        >
-        {/* Alça para arrastar (drag handle) */}
-        <div
-          className="absolute top-2 right-2 p-1 text-muted-foreground/50 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <GripVertical size={20} />
-        </div>
-
+    // A div externa agora é o elemento que a dnd-kit irá mover
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Card className="group relative cursor-grab active:cursor-grabbing">
         <CardHeader className="flex-row justify-between items-center">
           <Badge className={`${color} text-foreground`}>
             {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
@@ -131,7 +120,9 @@ export function CardBoard({
                     {st.done && <Check className="w-3 h-3 text-white" />}
                   </div>
                   <span
-                    className={st.done ? "line-through text-muted-foreground" : ""}
+                    className={
+                      st.done ? "line-through text-muted-foreground" : ""
+                    }
                   >
                     {st.title}
                   </span>
@@ -142,7 +133,6 @@ export function CardBoard({
         </CardContent>
 
         <CardFooter className="justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          {/* Mover card para frente */}
           {card.column !== "done" && (
             <Button
               variant="outline"
@@ -154,8 +144,6 @@ export function CardBoard({
               <ArrowRight />
             </Button>
           )}
-
-          {/* Mover card para trás */}
           {card.column !== "todo" && (
             <Button
               variant="outline"
@@ -167,13 +155,9 @@ export function CardBoard({
               <ArrowLeft />
             </Button>
           )}
-
-          {/* Editar */}
           <Button variant="outline" size="icon" onClick={onEdit}>
             <Edit />
           </Button>
-
-          {/* Deletar com confirmação */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="icon">

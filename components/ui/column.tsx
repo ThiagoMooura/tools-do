@@ -18,6 +18,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import React from "react"; // Importe React
+
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
@@ -35,7 +37,8 @@ interface ColumnProps {
   toggleSubTask: (cardId: string, subTaskId: string) => void;
 }
 
-export function Column({
+
+export const Column = React.memo(function Column({
   columnId,
   title,
   cards,
@@ -223,4 +226,4 @@ export function Column({
       </div>
     </div>
   );
-}
+})
