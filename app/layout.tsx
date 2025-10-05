@@ -32,7 +32,7 @@ export default function RootLayout({
           <div className="flex w-full">
             <Sidebar />
             <div className="flex flex-col flex-1">
-              <Header />
+              {/* <Header /> */}
               <main className="w-full">
                 {children}
               </main>

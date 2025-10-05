@@ -2,7 +2,7 @@ import { Board } from "@/components/ui/board";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col pt-10">
+    <main className="min-h-screen flex flex-col">
       <section className="flex-1 overflow-x-auto">
         <Board />
       </section>
