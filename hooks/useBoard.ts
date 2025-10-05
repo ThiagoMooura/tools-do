@@ -6,13 +6,20 @@ import { generateId } from "@/lib/utils";
 
 export type Priority = "low" | "medium" | "high";
 
+export interface SubTask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
 export interface Card {
   id: string;
   title: string;
   description?: string;
   priority: Priority;
   column: "todo" | "doing" | "done";
-  createdAt: number; // timestamp
+  createdAt: number;
+  subTasks?: SubTask[]; // nova propriedade
 }
 
 const STORAGE_KEY = "todo-board";

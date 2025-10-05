@@ -12,13 +12,13 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, MoreVertical } from "lucide-react";
 import { useState } from "react";
-import { Card, Priority } from "@/hooks/useBoard";
+import { Card, Priority, SubTask } from "@/hooks/useBoard";
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
   title: string;
   cards: Card[];
-  addCard: (title: string, priority: Priority, description?: string) => void;
+  addCard: (title: string, priority: Priority, description?: string, subTasks?: SubTask[]) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, column: "todo" | "doing" | "done") => void;
@@ -37,24 +37,57 @@ export function Column({
   const [titleInput, setTitleInput] = useState("");
   const [descInput, setDescInput] = useState("");
   const [priority, setPriority] = useState<Priority>("low");
+  const [subTasks, setSubTasks] = useState<SubTask[]>([]);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
 
   const handleSave = () => {
     if (!titleInput.trim()) return;
+
     if (editingCard) {
       editCard(editingCard.id, {
         title: titleInput,
         description: descInput,
         priority,
+        subTasks,
       });
     } else {
-      addCard(titleInput, priority, descInput);
+      addCard(titleInput, priority, descInput, subTasks);
     }
+
+    // Reset
     setIsOpen(false);
     setTitleInput("");
     setDescInput("");
     setPriority("low");
+    setSubTasks([]);
     setEditingCard(null);
+  };
+
+  const addSubTask = () => {
+    setSubTasks([...subTasks, { id: crypto.randomUUID(), title: "", done: false }]);
+  };
+
+  const updateSubTask = (id: string, title: string) => {
+    setSubTasks(subTasks.map(st => st.id === id ? { ...st, title } : st));
+  };
+
+  const removeSubTask = (id: string) => {
+    setSubTasks(subTasks.filter(st => st.id !== id));
+  };
+
+  const toggleSubTaskOfCard = (cardId: string, subTaskId: string) => {
+    const card = cards.find(c => c.id === cardId);
+    if (!card || !card.subTasks) return;
+    const updatedSubTasks = card.subTasks.map(st =>
+      st.id === subTaskId ? { ...st, done: !st.done } : st
+    );
+    editCard(cardId, { subTasks: updatedSubTasks });
+  };
+
+  const columnColors: Record<string, string> = {
+    todo: "bg-cyan-500",
+    doing: "bg-amber-500",
+    done: "bg-green-500",
   };
 
   return (
@@ -62,13 +95,7 @@ export function Column({
       <div className="w-full flex justify-between items-end">
         <h2 className="font-semibold text-lg">
           <span
-            className={`w-2.5 h-2.5 rounded-xs inline-block mr-2 ${
-              columnId === "todo"
-                ? "bg-cyan-500"
-                : columnId === "doing"
-                ? "bg-amber-500"
-                : "bg-green-500"
-            }`}
+            className={`w-2.5 h-2.5 rounded-xs inline-block mr-2 ${columnColors[columnId]}`}
           ></span>
           {title} ({cards.length})
         </h2>
@@ -91,9 +118,7 @@ export function Column({
 
           <SheetContent side="right" className="w-[400px] sm:w-[500px]">
             <SheetHeader>
-              <SheetTitle>
-                {editingCard ? "Editar tarefa" : "Nova tarefa"}
-              </SheetTitle>
+              <SheetTitle>{editingCard ? "Editar tarefa" : "Nova tarefa"}</SheetTitle>
               <SheetDescription>
                 {editingCard
                   ? "Atualize as informações da tarefa."
@@ -123,6 +148,29 @@ export function Column({
                 <option value="medium">Média</option>
                 <option value="high">Alta</option>
               </select>
+
+              {/* Sub-tarefas */}
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold">Sub-tarefas</h3>
+                {subTasks.map((st) => (
+                  <div key={st.id} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={st.title}
+                      onChange={(e) => updateSubTask(st.id, e.target.value)}
+                      placeholder="Sub-tarefa"
+                      className="border rounded-md px-2 py-1 flex-1"
+                    />
+                    <Button size="sm" variant="destructive" onClick={() => removeSubTask(st.id)}>
+                      X
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addSubTask}>
+                  + Adicionar sub-tarefa
+                </Button>
+              </div>
+
               <Button onClick={handleSave}>
                 {editingCard ? "Salvar alterações" : "Adicionar"}
               </Button>
@@ -140,10 +188,12 @@ export function Column({
                 setTitleInput(card.title);
                 setDescInput(card.description || "");
                 setPriority(card.priority);
+                setSubTasks(card.subTasks || []);
                 setIsOpen(true);
               }}
               onDelete={() => removeCard(card.id)}
               onMove={(newColumn) => moveCard(card.id, newColumn)}
+              onToggleSubTask={toggleSubTaskOfCard}
             />
           ))}
         </div>
