@@ -13,12 +13,22 @@ import {
 import { Plus, MoreVertical } from "lucide-react";
 import { useState } from "react";
 import { Card, Priority, SubTask } from "@/hooks/useBoard";
+import { useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
   title: string;
   cards: Card[];
-  addCard: (title: string, priority: Priority, description?: string, subTasks?: SubTask[]) => void;
+  addCard: (
+    title: string,
+    priority: Priority,
+    description?: string,
+    subTasks?: SubTask[]
+  ) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, column: "todo" | "doing" | "done") => void;
@@ -35,6 +45,8 @@ export function Column({
   moveCard,
   toggleSubTask,
 }: ColumnProps) {
+  const { setNodeRef } = useDroppable({ id: columnId });
+
   const [isOpen, setIsOpen] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const [descInput, setDescInput] = useState("");
@@ -83,7 +95,7 @@ export function Column({
   };
 
   return (
-    <div className="backdrop-blur-md rounded-xl p-4 flex flex-col">
+    <div className="rounded-xl p-4 flex flex-col">
       <div className="w-full flex justify-between items-end">
         <h2 className="font-semibold text-lg">
           <span
@@ -103,7 +115,7 @@ export function Column({
         </Button>
       </div>
 
-      <div className="my-4">
+      <div className="my-4 flex-1 flex flex-col">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
@@ -116,7 +128,9 @@ export function Column({
 
           <SheetContent side="right" className="w-[400px] sm:w-[500px]">
             <SheetHeader>
-              <SheetTitle>{editingCard ? "Editar tarefa" : "Nova tarefa"}</SheetTitle>
+              <SheetTitle>
+                {editingCard ? "Editar tarefa" : "Nova tarefa"}
+              </SheetTitle>
               <SheetDescription>
                 {editingCard
                   ? "Atualize as informações da tarefa."
@@ -147,10 +161,12 @@ export function Column({
                 <option value="high">Alta</option>
               </select>
 
-              {/* Sub-tarefas temporárias */}
               <div className="flex flex-col gap-2">
                 {subTasksInput.map((st) => (
-                  <div key={st.id} className="flex justify-between items-center">
+                  <div
+                    key={st.id}
+                    className="flex justify-between items-center"
+                  >
                     <span>{st.title}</span>
                     <Button
                       size="icon"
@@ -161,7 +177,6 @@ export function Column({
                     </Button>
                   </div>
                 ))}
-
                 <div className="flex gap-2">
                   <input
                     placeholder="Adicionar sub-tarefa"
@@ -180,26 +195,31 @@ export function Column({
           </SheetContent>
         </Sheet>
 
-        {/* Cards */}
-        <div className="flex flex-col gap-3">
-          {cards.map((card) => (
-            <CardBoard
-              key={card.id}
-              card={card}
-              onEdit={() => {
-                setEditingCard(card);
-                setTitleInput(card.title);
-                setDescInput(card.description || "");
-                setPriority(card.priority);
-                setSubTasksInput(card.subTasks || []);
-                setIsOpen(true);
-              }}
-              onDelete={() => removeCard(card.id)}
-              onMove={(newColumn) => moveCard(card.id, newColumn)}
-              onToggleSubTask={toggleSubTask}
-            />
-          ))}
-        </div>
+        {/* Área de drop e contexto de ordenação */}
+        <SortableContext
+          items={cards.map((c) => c.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div ref={setNodeRef} className="flex flex-col gap-3 flex-1">
+            {cards.map((card) => (
+              <CardBoard
+                key={card.id}
+                card={card}
+                onEdit={() => {
+                  setEditingCard(card);
+                  setTitleInput(card.title);
+                  setDescInput(card.description || "");
+                  setPriority(card.priority);
+                  setSubTasksInput(card.subTasks || []);
+                  setIsOpen(true);
+                }}
+                onDelete={() => removeCard(card.id)}
+                onMove={moveCard}
+                onToggleSubTask={toggleSubTask}
+              />
+            ))}
+          </div>
+        </SortableContext>
       </div>
     </div>
   );

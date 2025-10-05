@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { arrayMove } from "@dnd-kit/sortable"; // Importe esta função auxiliar!
 
 export type Priority = "low" | "medium" | "high";
 
@@ -88,5 +89,21 @@ export function useBoard() {
     );
   };
 
-  return { board, addCard, editCard, removeCard, moveCard, toggleSubTask };
+  const moveCardToOrder = (activeId: string, overId: string) => {
+    setBoard((currentBoard) => {
+      const activeIndex = currentBoard.findIndex((c) => c.id === activeId);
+      const overIndex = currentBoard.findIndex((c) => c.id === overId);
+
+      // Se não encontrar os cards ou se estiverem em colunas diferentes, não faz nada.
+      // A verificação de colunas diferentes é uma segurança extra.
+      if (activeIndex === -1 || overIndex === -1 || currentBoard[activeIndex].column !== currentBoard[overIndex].column) {
+        return currentBoard;
+      }
+
+      // Reorganiza o array usando a função arrayMove da dnd-kit
+      return arrayMove(currentBoard, activeIndex, overIndex);
+    });
+  };
+
+  return { board, addCard, editCard, removeCard, moveCard, toggleSubTask, moveCardToOrder };
 }
