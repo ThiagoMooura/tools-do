@@ -4,7 +4,7 @@ import { Column } from "@/components/ui/column";
 import { useBoard } from "@/hooks/useBoard";
 
 export function Board() {
-  const { board, addCard, editCard, removeCard, moveCard } = useBoard();
+  const { board, addCard, editCard, removeCard, moveCard, toggleSubTask } = useBoard();
 
   return (
     <div className="grid grid-cols-3 gap-6 py-4 px-20">
@@ -16,6 +16,7 @@ export function Board() {
         editCard={editCard}
         removeCard={removeCard}
         moveCard={moveCard}
+        toggleSubTask={toggleSubTask}
       />
       <Column
         title="In Progress"
@@ -25,6 +26,7 @@ export function Board() {
         editCard={editCard}
         removeCard={removeCard}
         moveCard={moveCard}
+        toggleSubTask={toggleSubTask}
       />
       <Column
         title="Completed"
@@ -34,6 +36,7 @@ export function Board() {
         editCard={editCard}
         removeCard={removeCard}
         moveCard={moveCard}
+        toggleSubTask={toggleSubTask}
       />
     </div>
   );

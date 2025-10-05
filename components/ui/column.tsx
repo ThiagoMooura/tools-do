@@ -22,6 +22,7 @@ interface ColumnProps {
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, column: "todo" | "doing" | "done") => void;
+  toggleSubTask: (cardId: string, subTaskId: string) => void;
 }
 
 export function Column({
@@ -32,62 +33,53 @@ export function Column({
   editCard,
   removeCard,
   moveCard,
+  toggleSubTask,
 }: ColumnProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const [descInput, setDescInput] = useState("");
   const [priority, setPriority] = useState<Priority>("low");
-  const [subTasks, setSubTasks] = useState<SubTask[]>([]);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+
+  const [subTasksInput, setSubTasksInput] = useState<SubTask[]>([]);
+  const [subTaskInputText, setSubTaskInputText] = useState("");
+
+  const handleAddSubTaskTemp = () => {
+    if (!subTaskInputText.trim()) return;
+    setSubTasksInput((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), title: subTaskInputText, done: false },
+    ]);
+    setSubTaskInputText("");
+  };
+
+  const handleRemoveSubTaskTemp = (id: string) => {
+    setSubTasksInput((prev) => prev.filter((st) => st.id !== id));
+  };
 
   const handleSave = () => {
     if (!titleInput.trim()) return;
 
+    const newCardData = {
+      title: titleInput,
+      description: descInput,
+      priority,
+      subTasks: subTasksInput,
+    };
+
     if (editingCard) {
-      editCard(editingCard.id, {
-        title: titleInput,
-        description: descInput,
-        priority,
-        subTasks,
-      });
+      editCard(editingCard.id, newCardData);
     } else {
-      addCard(titleInput, priority, descInput, subTasks);
+      addCard(titleInput, priority, descInput, subTasksInput);
     }
 
-    // Reset
     setIsOpen(false);
     setTitleInput("");
     setDescInput("");
     setPriority("low");
-    setSubTasks([]);
+    setSubTasksInput([]);
+    setSubTaskInputText("");
     setEditingCard(null);
-  };
-
-  const addSubTask = () => {
-    setSubTasks([...subTasks, { id: crypto.randomUUID(), title: "", done: false }]);
-  };
-
-  const updateSubTask = (id: string, title: string) => {
-    setSubTasks(subTasks.map(st => st.id === id ? { ...st, title } : st));
-  };
-
-  const removeSubTask = (id: string) => {
-    setSubTasks(subTasks.filter(st => st.id !== id));
-  };
-
-  const toggleSubTaskOfCard = (cardId: string, subTaskId: string) => {
-    const card = cards.find(c => c.id === cardId);
-    if (!card || !card.subTasks) return;
-    const updatedSubTasks = card.subTasks.map(st =>
-      st.id === subTaskId ? { ...st, done: !st.done } : st
-    );
-    editCard(cardId, { subTasks: updatedSubTasks });
-  };
-
-  const columnColors: Record<string, string> = {
-    todo: "bg-cyan-500",
-    doing: "bg-amber-500",
-    done: "bg-green-500",
   };
 
   return (
@@ -95,7 +87,13 @@ export function Column({
       <div className="w-full flex justify-between items-end">
         <h2 className="font-semibold text-lg">
           <span
-            className={`w-2.5 h-2.5 rounded-xs inline-block mr-2 ${columnColors[columnId]}`}
+            className={`w-2.5 h-2.5 rounded-xs inline-block mr-2 ${
+              columnId === "todo"
+                ? "bg-cyan-500"
+                : columnId === "doing"
+                ? "bg-amber-500"
+                : "bg-green-500"
+            }`}
           ></span>
           {title} ({cards.length})
         </h2>
@@ -149,26 +147,30 @@ export function Column({
                 <option value="high">Alta</option>
               </select>
 
-              {/* Sub-tarefas */}
+              {/* Sub-tarefas temporárias */}
               <div className="flex flex-col gap-2">
-                <h3 className="font-semibold">Sub-tarefas</h3>
-                {subTasks.map((st) => (
-                  <div key={st.id} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      value={st.title}
-                      onChange={(e) => updateSubTask(st.id, e.target.value)}
-                      placeholder="Sub-tarefa"
-                      className="border rounded-md px-2 py-1 flex-1"
-                    />
-                    <Button size="sm" variant="destructive" onClick={() => removeSubTask(st.id)}>
-                      X
+                {subTasksInput.map((st) => (
+                  <div key={st.id} className="flex justify-between items-center">
+                    <span>{st.title}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleRemoveSubTaskTemp(st.id)}
+                    >
+                      ×
                     </Button>
                   </div>
                 ))}
-                <Button variant="outline" size="sm" onClick={addSubTask}>
-                  + Adicionar sub-tarefa
-                </Button>
+
+                <div className="flex gap-2">
+                  <input
+                    placeholder="Adicionar sub-tarefa"
+                    value={subTaskInputText}
+                    onChange={(e) => setSubTaskInputText(e.target.value)}
+                    className="border rounded-md px-3 py-2 flex-1"
+                  />
+                  <Button onClick={handleAddSubTaskTemp}>Adicionar</Button>
+                </div>
               </div>
 
               <Button onClick={handleSave}>
@@ -178,6 +180,7 @@ export function Column({
           </SheetContent>
         </Sheet>
 
+        {/* Cards */}
         <div className="flex flex-col gap-3">
           {cards.map((card) => (
             <CardBoard
@@ -188,12 +191,12 @@ export function Column({
                 setTitleInput(card.title);
                 setDescInput(card.description || "");
                 setPriority(card.priority);
-                setSubTasks(card.subTasks || []);
+                setSubTasksInput(card.subTasks || []);
                 setIsOpen(true);
               }}
               onDelete={() => removeCard(card.id)}
               onMove={(newColumn) => moveCard(card.id, newColumn)}
-              onToggleSubTask={toggleSubTaskOfCard}
+              onToggleSubTask={toggleSubTask}
             />
           ))}
         </div>

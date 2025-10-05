@@ -1,8 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { saveToStorage, loadFromStorage } from "@/lib/storage";
-import { generateId } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 export type Priority = "low" | "medium" | "high";
 
@@ -19,46 +15,78 @@ export interface Card {
   priority: Priority;
   column: "todo" | "doing" | "done";
   createdAt: number;
-  subTasks?: SubTask[]; // nova propriedade
+  subTasks?: SubTask[];
 }
 
-const STORAGE_KEY = "todo-board";
+const STORAGE_KEY = "boardData";
 
 export function useBoard() {
   const [board, setBoard] = useState<Card[]>([]);
 
+  // Carregar do localStorage ao iniciar
   useEffect(() => {
-    const data = loadFromStorage<Card[]>(STORAGE_KEY, []);
-    setBoard(data);
+    if (typeof window === "undefined") return;
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      try {
+        setBoard(JSON.parse(data));
+      } catch (e) {
+        console.error("Erro ao parsear board do localStorage", e);
+      }
+    }
   }, []);
 
+  // Salvar no localStorage sempre que board mudar
   useEffect(() => {
-    saveToStorage(STORAGE_KEY, board);
+    if (typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(board));
   }, [board]);
 
-  function addCard(title: string, priority: Priority, description?: string) {
+  const addCard = (
+    title: string,
+    priority: Priority,
+    description?: string,
+    subTasks: SubTask[] = []
+  ) => {
     const newCard: Card = {
-      id: generateId(),
+      id: crypto.randomUUID(),
       title,
       description,
       priority,
       column: "todo",
       createdAt: Date.now(),
+      subTasks,
     };
     setBoard((prev) => [...prev, newCard]);
-  }
+  };
 
-  function editCard(id: string, updates: Partial<Card>) {
-    setBoard((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
-  }
+  const editCard = (id: string, updates: Partial<Card>) => {
+    setBoard((prev) =>
+      prev.map((card) => (card.id === id ? { ...card, ...updates } : card))
+    );
+  };
 
-  function removeCard(id: string) {
-    setBoard((prev) => prev.filter((c) => c.id !== id));
-  }
+  const removeCard = (id: string) => {
+    setBoard((prev) => prev.filter((card) => card.id !== id));
+  };
 
-  function moveCard(id: string, column: "todo" | "doing" | "done") {
-    setBoard((prev) => prev.map((c) => (c.id === id ? { ...c, column } : c)));
-  }
+  const moveCard = (id: string, column: "todo" | "doing" | "done") => {
+    setBoard((prev) =>
+      prev.map((card) => (card.id === id ? { ...card, column } : card))
+    );
+  };
 
-  return { board, addCard, editCard, removeCard, moveCard };
+  const toggleSubTask = (cardId: string, subTaskId: string) => {
+    setBoard((prev) =>
+      prev.map((card) => {
+        if (card.id !== cardId) return card;
+        const updatedSubTasks = card.subTasks?.map((st) =>
+          st.id === subTaskId ? { ...st, done: !st.done } : st
+        );
+        return { ...card, subTasks: updatedSubTasks };
+      })
+    );
+  };
+
+  return { board, addCard, editCard, removeCard, moveCard, toggleSubTask };
 }
