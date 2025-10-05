@@ -10,13 +10,13 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  // Importe as novas propriedades
   closestCenter, 
   MeasuringStrategy,
 } from "@dnd-kit/core";
 import { useState, useMemo } from "react";
 import { Card as CardType } from "@/hooks/useBoard";
 import { CardBoard } from "@/components/ui/cardBoard";
+import { restrictToFirstScrollableAncestor } from "@dnd-kit/modifiers";
 
 export function Board() {
   const {
@@ -89,7 +89,7 @@ export function Board() {
       
       // Estratégia de detecção de colisão. `closestCenter` é mais performático que `rectangleIntersection` (padrão).
       collisionDetection={closestCenter}
-      
+      modifiers={[restrictToFirstScrollableAncestor]}
       // Estratégia de medição. Isso diz para a dnd-kit usar transformações CSS para medir os nós,
       // o que é muito mais rápido e evita "reflows" de layout.
       measuring={{
