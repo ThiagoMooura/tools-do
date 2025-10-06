@@ -11,35 +11,30 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  Home,
-  Settings,
-  Folder,
   Sun,
   Moon,
-  ChevronDown,
-  ChevronUp,
   SidebarIcon,
   Code,
   Palette,
   Edit,
   BadgeCheck,
+  Check,
+  Languages
 } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 
 // 🧠 Importa utilitários de persistência
 import { saveToStorage, loadFromStorage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export default function BoardSidebar() {
   const [theme, setTheme] = useState<"light" | "dark" | "system">("dark");
   const [collapsed, setCollapsed] = useState(false);
-  const [openThemes, setOpenThemes] = useState(false);
 
   // 🔹 Carrega o tema salvo ao montar
   useEffect(() => {
@@ -72,17 +67,14 @@ export default function BoardSidebar() {
         } transition-[width] duration-200 ease-linear`}
       >
         {/* Header */}
-        <SidebarHeader className="flex justify-between items-center px-2 py-2">
-          {!collapsed && <h1 className="text-lg font-bold">Meu Painel</h1>}
+        <SidebarHeader className={`flex flex-row justify-between items-center py-2 ${collapsed ? "px-2" : "px-4"}`}>
+          {!collapsed && <h1 className="text-lg font-bold">Tools-Do</h1>}
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <SidebarIcon className="w-4 h-4" />
-            </button>
-          </div>
+          <Button variant="ghost"  className="justify-start"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <SidebarIcon className="w-4 h-4" />
+          </Button>
         </SidebarHeader>
 
         {/* Menu */}
@@ -98,79 +90,78 @@ export default function BoardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Button variant="ghost" className="w-full justify-start">
-                <Palette className="w-4 h-4" />
-                {!collapsed && "Tema"}
-              </Button>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              {/* Botão que abre o dropdown */}
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start">
+                  <Palette className="w-4 h-4" />
+                  {!collapsed && "Tema"}
+                </Button>
+              </DropdownMenuTrigger>
+
+              {/* Conteúdo do dropdown */}
+              <DropdownMenuContent className="w-44" align="start">
+                <DropdownMenuItem
+                  onClick={() => setTheme("dark")}
+                  className="flex items-center gap-2"
+                >
+                  <Moon className="w-4 h-4" />
+                  Escuro
+                  {theme === "dark" && <Check className="w-4 h-4" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setTheme("light")}
+                  className="flex items-center gap-2"
+                >
+                  <Sun className="w-4 h-4" />
+                  Claro
+                  {theme === "light" && <Check className="w-4 h-4" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setTheme("system")}
+                  className="flex items-center gap-2"
+                >
+                  <Code className="w-4 h-4" />
+                  Sistema
+                  {theme === "system" && <Check className="w-4 h-4" />}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
 
-          {/* Tema com Collapsible */}
-          <Collapsible open={openThemes} onOpenChange={setOpenThemes}>
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center justify-between w-full gap-2 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4" />
-                    {!collapsed && "Tema"}
-                  </div>
-                  {!collapsed && (
-                    <span className="text-sm">
-                      {openThemes ? <ChevronUp /> : <ChevronDown />}
-                    </span>
-                  )}
-                </button>
-              </CollapsibleTrigger>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              {/* Botão que abre o dropdown */}
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start">
+                  <Languages className="w-4 h-4" />
+                  {!collapsed && "Idioma"}
+                </Button>
+              </DropdownMenuTrigger>
 
-              <CollapsibleContent>
-                {!collapsed && (
-                  <div className="ml-6 mt-2">
-                    <RadioGroup
-                      value={theme}
-                      onValueChange={(val) =>
-                        setTheme(val as "light" | "dark" | "system")
-                      }
-                      className="flex flex-col gap-1"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="light" id="light" />
-                        <Label
-                          htmlFor="light"
-                          className="text-sm cursor-pointer flex items-center gap-2"
-                        >
-                          <Sun className="w-4 h-4" />
-                          Claro
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="dark" id="dark" />
-                        <Label
-                          htmlFor="dark"
-                          className="text-sm cursor-pointer flex items-center gap-2"
-                        >
-                          <Moon className="w-4 h-4" />
-                          Escuro
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="system" id="system" />
-                        <Label
-                          htmlFor="system"
-                          className="text-sm cursor-pointer flex items-center gap-2"
-                        >
-                          <Code className="w-4 h-4" />
-                          Sistema
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                )}
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
+              {/* Conteúdo do dropdown */}
+              <DropdownMenuContent className="w-44" align="start">
+                <DropdownMenuItem
+                  className="flex items-center gap-2"
+                >
+                  <Moon className="w-4 h-4" />
+                  Escuro
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center gap-2"
+                >
+                  <Sun className="w-4 h-4" />
+                  Claro
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center gap-2"
+                >
+                  <Code className="w-4 h-4" />
+                  Sistema
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
 
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
@@ -182,7 +173,7 @@ export default function BoardSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <SidebarFooter className="px-3 py-2 text-sm text-muted-foreground">
+        <SidebarFooter className="px-6 py-2 text-sm text-muted-foreground">
           {!collapsed && "v1.0.0"}
         </SidebarFooter>
       </Sidebar>
