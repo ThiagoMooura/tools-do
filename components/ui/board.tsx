@@ -102,7 +102,7 @@ export function Board() {
     >
       <div className="grid grid-cols-3 gap-6 py-4 px-20 h-screen">
         <Column
-          title="To do"
+          title="To Do"
           columnId="todo"
           cards={todoCards}
           addCard={addCard}

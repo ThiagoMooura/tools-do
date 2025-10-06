@@ -77,17 +77,17 @@ export function CardBoard({
 
   const color =
     card.priority === "high"
-      ? "bg-red-700"
+      ? "bg-purple-700"
       : card.priority === "medium"
-      ? "bg-yellow-700"
-      : "bg-green-700";
+      ? "bg-amber-600"
+      : "bg-green-600";
 
   return (
     // A div externa agora é o elemento que a dnd-kit irá mover
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Card className="group relative cursor-grab active:cursor-grabbing">
         <CardHeader className="flex-row justify-between items-center">
-          <Badge className={`${color} text-foreground`}>
+          <Badge className={`${color} text-white`}>
             {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
           </Badge>
           <span className="text-sm text-muted-foreground">{formattedDate}</span>
@@ -121,7 +121,7 @@ export function CardBoard({
                   </div>
                   <span
                     className={
-                      st.done ? "line-through text-muted-foreground" : ""
+                      st.done ? "text-muted-foreground" : ""
                     }
                   >
                     {st.title}
@@ -133,17 +133,6 @@ export function CardBoard({
         </CardContent>
 
         <CardFooter className="justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          {card.column !== "done" && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() =>
-                onMove(card.id, card.column === "todo" ? "doing" : "done")
-              }
-            >
-              <ArrowRight />
-            </Button>
-          )}
           {card.column !== "todo" && (
             <Button
               variant="outline"
@@ -153,6 +142,17 @@ export function CardBoard({
               }
             >
               <ArrowLeft />
+            </Button>
+          )}
+          {card.column !== "done" && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() =>
+                onMove(card.id, card.column === "todo" ? "doing" : "done")
+              }
+            >
+              <ArrowRight />
             </Button>
           )}
           <Button variant="outline" size="icon" onClick={onEdit}>
