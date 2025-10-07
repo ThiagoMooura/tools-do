@@ -4,6 +4,11 @@ import { arrayMove } from "@dnd-kit/sortable";
 
 export type Priority = "low" | "medium" | "high";
 
+type Board = {
+  id: string;
+  name: string;
+};
+
 export interface SubTask {
   id: string;
   title: string;
@@ -173,12 +178,36 @@ export function useBoard() {
     );
   };
 
+  const editBoard = (id: string, newName: string) => {
+    setBoards((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, name: newName } : b))
+    );
+  };
+
+  const deleteBoard = (id: string) => {
+    setBoards((prevBoards) => {
+      if (!prevBoards) return []; // segurança extra, mas prevBoards nunca deve ser null
+      return prevBoards.filter((b) => b.id !== id);
+    });
+
+    setActiveBoardId((prevId) => {
+      // se o board ativo foi deletado, define o primeiro board existente como ativo
+      if (prevId === id) {
+        return boards.length > 0 ? boards[0].id : null;
+      }
+      return prevId;
+    });
+  };
+
+
   return {
     boards,
     activeBoard,
     activeBoardId,
     addBoard,
     selectBoard,
+    editBoard,
+    deleteBoard,
     board: activeBoard?.cards ?? [],
     addCard,
     editCard,
