@@ -1,7 +1,9 @@
+
 "use client";
 
 import { Column } from "@/components/ui/column";
-import { useBoard } from "@/hooks/useBoard";
+import { useBoardContext } from "@/app/contexts/boardContext";
+
 import {
   DndContext,
   DragEndEvent,
@@ -20,14 +22,15 @@ import { restrictToFirstScrollableAncestor } from "@dnd-kit/modifiers";
 
 export function Board() {
   const {
-    board,
+    activeBoard,
+    board: cards,
     addCard,
     editCard,
     removeCard,
     moveCard,
     moveCardToOrder,
     toggleSubTask,
-  } = useBoard();
+  } = useBoardContext();
 
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
 
@@ -39,13 +42,13 @@ export function Board() {
     })
   );
 
-  const todoCards = useMemo(() => board.filter((c) => c.column === "todo"), [board]);
-  const doingCards = useMemo(() => board.filter((c) => c.column === "doing"), [board]);
-  const doneCards = useMemo(() => board.filter((c) => c.column === "done"), [board]);
+  const todoCards = useMemo(() => cards.filter((c) => c.column === "todo"), [cards]);
+  const doingCards = useMemo(() => cards.filter((c) => c.column === "doing"), [cards]);
+  const doneCards = useMemo(() => cards.filter((c) => c.column === "done"), [cards]);
 
   function handleDragStart(event: DragStartEvent) {
     const { active } = event;
-    const card = board.find((c) => c.id === active.id);
+    const card = cards.find((c) => c.id === active.id);
     if (card) {
       setActiveCard(card);
     }
@@ -60,10 +63,10 @@ export function Board() {
     const overId = String(over.id);
     if (activeId === overId) return;
 
-    const activeCard = board.find((card) => card.id === activeId);
+    const activeCard = cards.find((card) => card.id === activeId);
     if (!activeCard) return;
 
-    const overCard = board.find((card) => card.id === overId);
+    const overCard = cards.find((card) => card.id === overId);
     const overIsColumn = ["todo", "doing", "done"].includes(overId);
 
     if (overIsColumn && activeCard.column !== overId) {
@@ -78,6 +81,14 @@ export function Board() {
         moveCardToOrder(activeId, overId);
       }
     }
+  }
+
+  if (!activeBoard) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-2xl text-muted-foreground">
+        Selecione ou crie um board para começar.
+      </div>
+    );
   }
 
   return (
@@ -147,3 +158,4 @@ export function Board() {
     </DndContext>
   );
 }
+
