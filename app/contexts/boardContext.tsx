@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useBoard, BoardData, Card, Priority, SubTask } from '@/hooks/useBoard';
+import { useBoard, BoardData, Card, Priority, SubTask, Tag } from '@/hooks/useBoard';
 
 interface BoardContextType {
   boards: BoardData[];
@@ -12,7 +12,7 @@ interface BoardContextType {
   editBoard: (id: string, newName: string) => void;
   deleteBoard: (id: string) => void;
   board: Card[];
-  addCard: (title: string, priority: Priority, description?: string, subTasks?: SubTask[]) => void;
+  addCard: (title: string, priority: Priority, description?: string, subTasks?: SubTask[], tags?: Tag[]) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, column: "todo" | "doing" | "done") => void;

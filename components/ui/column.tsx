@@ -10,9 +10,9 @@ import {
   SheetTrigger,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Plus, MoreVertical } from "lucide-react";
+import { Plus, MoreVertical, Tag as TagIcon, X } from "lucide-react";
 import { useState } from "react";
-import { Card, Priority, SubTask } from "@/hooks/useBoard";
+import { Card, Priority, SubTask, Tag } from "@/hooks/useBoard";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -29,7 +29,8 @@ interface ColumnProps {
     title: string,
     priority: Priority,
     description?: string,
-    subTasks?: SubTask[]
+    subTasks?: SubTask[],
+    tags?: Tag[]
   ) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
@@ -59,6 +60,10 @@ export const Column = React.memo(function Column({
   const [subTasksInput, setSubTasksInput] = useState<SubTask[]>([]);
   const [subTaskInputText, setSubTaskInputText] = useState("");
 
+  const [tagsInput, setTagsInput] = useState<Tag[]>([]);
+  const [tagInputText, setTagInputText] = useState("");
+  const [tagInputColor, setTagInputColor] = useState("#60a5fa"); // Cor padrão azul
+
   const handleAddSubTaskTemp = () => {
     if (!subTaskInputText.trim()) return;
     setSubTasksInput((prev) => [
@@ -72,6 +77,19 @@ export const Column = React.memo(function Column({
     setSubTasksInput((prev) => prev.filter((st) => st.id !== id));
   };
 
+  const handleAddTagTemp = () => {
+    if (!tagInputText.trim()) return;
+    setTagsInput((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), name: tagInputText, color: tagInputColor },
+    ]);
+    setTagInputText("");
+  };
+
+  const handleRemoveTagTemp = (id: string) => {
+    setTagsInput((prev) => prev.filter((tag) => tag.id !== id));
+  };
+
   const handleSave = () => {
     if (!titleInput.trim()) return;
 
@@ -80,12 +98,13 @@ export const Column = React.memo(function Column({
       description: descInput,
       priority,
       subTasks: subTasksInput,
+      tags: tagsInput,
     };
 
     if (editingCard) {
       editCard(editingCard.id, newCardData);
     } else {
-      addCard(titleInput, priority, descInput, subTasksInput);
+      addCard(titleInput, priority, descInput, subTasksInput, tagsInput);
     }
 
     setIsOpen(false);
@@ -94,6 +113,9 @@ export const Column = React.memo(function Column({
     setPriority("low");
     setSubTasksInput([]);
     setSubTaskInputText("");
+    setTagsInput([]);
+    setTagInputText("");
+    setTagInputColor("#60a5fa");
     setEditingCard(null);
   };
 
@@ -165,6 +187,7 @@ export const Column = React.memo(function Column({
               </select>
 
               <div className="flex flex-col gap-2">
+                <h3 className="text-sm font-medium">Sub-tarefas</h3>
                 {subTasksInput.map((st) => (
                   <div
                     key={st.id}
@@ -176,7 +199,7 @@ export const Column = React.memo(function Column({
                       variant="ghost"
                       onClick={() => handleRemoveSubTaskTemp(st.id)}
                     >
-                      ×
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 ))}
@@ -188,6 +211,44 @@ export const Column = React.memo(function Column({
                     className="border rounded-md px-3 py-2 flex-1"
                   />
                   <Button onClick={handleAddSubTaskTemp}>Adicionar</Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <h3 className="text-sm font-medium">Tags</h3>
+                <div className="flex flex-wrap gap-2">
+                  {tagsInput.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white"
+                      style={{ backgroundColor: tag.color }}
+                    >
+                      {tag.name}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-4 w-4 text-white hover:bg-white hover:text-black"
+                        onClick={() => handleRemoveTagTemp(tag.id)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={tagInputColor}
+                    onChange={(e) => setTagInputColor(e.target.value)}
+                    className="w-10 h-9 p-0 border-none rounded-md overflow-hidden cursor-pointer"
+                  />
+                  <input
+                    placeholder="Nome da tag"
+                    value={tagInputText}
+                    onChange={(e) => setTagInputText(e.target.value)}
+                    className="border rounded-md px-3 py-2 flex-1"
+                  />
+                  <Button onClick={handleAddTagTemp}>Adicionar Tag</Button>
                 </div>
               </div>
 
@@ -214,6 +275,7 @@ export const Column = React.memo(function Column({
                   setDescInput(card.description || "");
                   setPriority(card.priority);
                   setSubTasksInput(card.subTasks || []);
+                  setTagsInput(card.tags || []);
                   setIsOpen(true);
                 }}
                 onDelete={() => removeCard(card.id)}

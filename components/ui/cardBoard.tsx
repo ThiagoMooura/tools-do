@@ -26,7 +26,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Card as CardType, SubTask } from "@/hooks/useBoard";
+import { Card as CardType, SubTask, Tag } from "@/hooks/useBoard";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -86,11 +86,26 @@ export function CardBoard({
     // A div externa agora é o elemento que a dnd-kit irá mover
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Card className="group relative cursor-grab active:cursor-grabbing">
-        <CardHeader className="flex-row justify-between items-center">
-          <Badge className={`${color} text-white`}>
-            {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
-          </Badge>
-          <span className="text-sm text-muted-foreground">{formattedDate}</span>
+        <CardHeader className="flex-col items-start gap-2">
+          <div className="flex flex-row justify-between items-center w-full">
+            <Badge className={`${color} text-white`}>
+              {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
+            </Badge>
+            <span className="text-sm text-muted-foreground">{formattedDate}</span>
+          </div>
+          {card.tags && card.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {card.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="px-2 py-1 rounded-full text-xs text-white"
+                  style={{ backgroundColor: tag.color }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
         </CardHeader>
 
         <CardContent>

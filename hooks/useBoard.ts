@@ -4,15 +4,16 @@ import { arrayMove } from "@dnd-kit/sortable";
 
 export type Priority = "low" | "medium" | "high";
 
-type Board = {
-  id: string;
-  name: string;
-};
-
 export interface SubTask {
   id: string;
   title: string;
   done: boolean;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
 }
 
 export interface Card {
@@ -23,6 +24,7 @@ export interface Card {
   column: "todo" | "doing" | "done";
   createdAt: number;
   subTasks?: SubTask[];
+  tags?: Tag[];
 }
 
 export interface BoardData {
@@ -87,7 +89,8 @@ export function useBoard() {
     title: string,
     priority: Priority,
     description?: string,
-    subTasks: SubTask[] = []
+    subTasks: SubTask[] = [],
+    tags: Tag[] = []
   ) => {
     if (!activeBoardId) return;
     const newCard: Card = {
@@ -98,6 +101,7 @@ export function useBoard() {
       column: "todo",
       createdAt: Date.now(),
       subTasks,
+      tags,
     };
     setBoards((prev) =>
       prev.map((b) =>

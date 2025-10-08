@@ -200,7 +200,7 @@ export default function BoardSidebar() {
             ) : (
               <Button
                 variant="ghost"
-                className="w-full justify-start text-purple-500 hover:text-purple-600"
+                className="w-full text-purple-500 hover:text-purple-600"
                 onClick={() => setIsCreatingBoard(true)}
               >
                 <Plus className="w-4 h-4" />
