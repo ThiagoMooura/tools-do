@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,14 +13,15 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, MoreVertical } from "lucide-react";
 import { useState } from "react";
-import { Card, Priority, SubTask } from "@/hooks/useBoard";
+import { Card, Priority, SubTask, Tag } from "@/hooks/useBoard";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import React from "react"; // Importe React
-
+import React from "react";
+import { useBoardContext } from "@/app/contexts/boardContext";
+import { Badge } from "@/components/ui/badge"; // Importar Badge
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
@@ -29,14 +31,14 @@ interface ColumnProps {
     title: string,
     priority: Priority,
     description?: string,
-    subTasks?: SubTask[]
+    subTasks?: SubTask[],
+    tagId?: string
   ) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, column: "todo" | "doing" | "done") => void;
   toggleSubTask: (cardId: string, subTaskId: string) => void;
 }
-
 
 export const Column = React.memo(function Column({
   columnId,
@@ -49,12 +51,15 @@ export const Column = React.memo(function Column({
   toggleSubTask,
 }: ColumnProps) {
   const { setNodeRef } = useDroppable({ id: columnId });
+  const { availableTags, addTag } = useBoardContext();
 
   const [isOpen, setIsOpen] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const [descInput, setDescInput] = useState("");
   const [priority, setPriority] = useState<Priority>("low");
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [selectedTagId, setSelectedTagId] = useState<string | undefined>(undefined);
+  const [newTagName, setNewTagName] = useState("");
 
   const [subTasksInput, setSubTasksInput] = useState<SubTask[]>([]);
   const [subTaskInputText, setSubTaskInputText] = useState("");
@@ -72,6 +77,19 @@ export const Column = React.memo(function Column({
     setSubTasksInput((prev) => prev.filter((st) => st.id !== id));
   };
 
+  const handleAddNewTag = () => {
+    if (newTagName.trim()) {
+      const existingTag = availableTags.find(tag => tag.name.toLowerCase() === newTagName.trim().toLowerCase());
+      if (existingTag) {
+        setSelectedTagId(existingTag.id);
+      } else {
+        const createdTag = addTag(newTagName.trim());
+        setSelectedTagId(createdTag.id);
+      }
+      setNewTagName("");
+    }
+  };
+
   const handleSave = () => {
     if (!titleInput.trim()) return;
 
@@ -80,12 +98,13 @@ export const Column = React.memo(function Column({
       description: descInput,
       priority,
       subTasks: subTasksInput,
+      tagId: selectedTagId,
     };
 
     if (editingCard) {
       editCard(editingCard.id, newCardData);
     } else {
-      addCard(titleInput, priority, descInput, subTasksInput);
+      addCard(titleInput, priority, descInput, subTasksInput, selectedTagId);
     }
 
     setIsOpen(false);
@@ -95,6 +114,8 @@ export const Column = React.memo(function Column({
     setSubTasksInput([]);
     setSubTaskInputText("");
     setEditingCard(null);
+    setSelectedTagId(undefined);
+    setNewTagName("");
   };
 
   return (
@@ -110,7 +131,10 @@ export const Column = React.memo(function Column({
                 : "bg-green-500"
             }`}
           ></span>
-          {title} ({cards.length})
+          {title}
+          <span className="text-muted-foreground ml-1">  
+            ({cards.length})
+          </span>
         </h2>
 
         <Button variant="ghost" className="-mb-1">
@@ -164,6 +188,42 @@ export const Column = React.memo(function Column({
                 <option value="high">Alta</option>
               </select>
 
+              {/* Seleção de Tags com Badges Clicáveis */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Tag (opcional)</label>
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      style={{ backgroundColor: tag.color, cursor: 'pointer' }}
+                      className={`text-white ${selectedTagId === tag.id ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}
+                      onClick={() => setSelectedTagId(selectedTagId === tag.id ? undefined : tag.id)}
+                    >
+                      {tag.name}
+                    </Badge>
+                  ))}
+                  {selectedTagId && !availableTags.some(tag => tag.id === selectedTagId) && (
+                    <Badge
+                      style={{ backgroundColor: '#6B7280', cursor: 'pointer' }}
+                      className="text-white ring-2 ring-offset-2 ring-blue-500"
+                      onClick={() => setSelectedTagId(undefined)}
+                    >
+                      Tag Removida
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <input
+                    placeholder="Criar nova tag..."
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddNewTag()}
+                    className="border rounded-md px-3 py-2 flex-1"
+                  />
+                  <Button onClick={handleAddNewTag} disabled={!newTagName.trim()}>Criar Tag</Button>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
                 {subTasksInput.map((st) => (
                   <div
@@ -214,6 +274,7 @@ export const Column = React.memo(function Column({
                   setDescInput(card.description || "");
                   setPriority(card.priority);
                   setSubTasksInput(card.subTasks || []);
+                  setSelectedTagId(card.tagId);
                   setIsOpen(true);
                 }}
                 onDelete={() => removeCard(card.id)}
@@ -227,3 +288,4 @@ export const Column = React.memo(function Column({
     </div>
   );
 })
+

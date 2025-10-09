@@ -4,6 +4,12 @@ import { arrayMove } from "@dnd-kit/sortable";
 
 export type Priority = "low" | "medium" | "high";
 
+export type Tag = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 type Board = {
   id: string;
   name: string;
@@ -23,15 +29,40 @@ export interface Card {
   column: "todo" | "doing" | "done";
   createdAt: number;
   subTasks?: SubTask[];
+  tagId?: string; // Nova propriedade para a tag
 }
 
 export interface BoardData {
   id: string;
   name: string;
   cards: Card[];
+  availableTags: Tag[]; // Nova propriedade para tags disponíveis no board
 }
 
 const STORAGE_KEY = "boardData";
+
+const DEFAULT_TAGS: Omit<Tag, 'id'>[] = [
+  { name: "Estudo", color: "#EF4444" }, // red-500
+  { name: "Trabalho", color: "#3B82F6" }, // blue-500
+  { name: "Diversão", color: "#EC4899" }, // pink-500
+  { name: "Academia", color: "#22C55E" }, // green-500
+  { name: "Casa", color: "#F59E0B" }, // amber-500
+  { name: "Finanças", color: "#6366F1" }, // indigo-500
+  { name: "Projetos Pessoais", color: "#06B6D4" }, // cyan-500
+  { name: "Saúde", color: "#F97316" }, // orange-500
+  { name: "Urgente", color: "#DC2626" }, // red-600
+];
+
+function generateRandomColor(): string {
+  const colors = [
+    "#EF4444", "#F97316", "#F59E0B", "#EAB308", "#84CC16", "#22C55E",
+    "#10B981", "#14B8A6", "#06B6D4", "#0EA5E9", "#3B82F6", "#6366F1",
+    "#8B5CF6", "#A855F7", "#D946EF", "#EC4899", "#F43F5E", "#FB7185",
+    "#F87171", "#FBBF24", "#A3E635", "#34D399", "#2DD4BF", "#22D3EE",
+    "#60A5FA", "#818CF8", "#C084FC", "#E879F9", "#F472B6", "#FB923C"
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
 
 export function useBoard() {
   const [boards, setBoards] = useState<BoardData[]>([]);
@@ -44,14 +75,21 @@ export function useBoard() {
       try {
         const parsedData = JSON.parse(data);
         if (Array.isArray(parsedData) && parsedData.length > 0) {
-          setBoards(parsedData);
-          setActiveBoardId(parsedData[0].id);
+          // Garante que cada board tenha availableTags e preenche com DEFAULT_TAGS se estiver vazio
+          const boardsWithTags = parsedData.map((board: BoardData) => ({
+            ...board,
+            availableTags: board.availableTags && board.availableTags.length > 0
+              ? board.availableTags
+              : DEFAULT_TAGS.map(tag => ({ ...tag, id: crypto.randomUUID() }))
+          }));
+          setBoards(boardsWithTags);
+          setActiveBoardId(boardsWithTags[0].id);
         } else {
-          // Se não houver dados ou o formato for inválido, crie um board padrão
           const defaultBoard: BoardData = {
             id: crypto.randomUUID(),
             name: "Meu Primeiro Board",
             cards: [],
+            availableTags: DEFAULT_TAGS.map(tag => ({ ...tag, id: crypto.randomUUID() }))
           };
           setBoards([defaultBoard]);
           setActiveBoardId(defaultBoard.id);
@@ -74,6 +112,7 @@ export function useBoard() {
       id: crypto.randomUUID(),
       name,
       cards: [],
+      availableTags: DEFAULT_TAGS.map(tag => ({ ...tag, id: crypto.randomUUID() }))
     };
     setBoards((prev) => [...prev, newBoard]);
     setActiveBoardId(newBoard.id);
@@ -87,7 +126,8 @@ export function useBoard() {
     title: string,
     priority: Priority,
     description?: string,
-    subTasks: SubTask[] = []
+    subTasks: SubTask[] = [],
+    tagId?: string // Nova propriedade para a tag
   ) => {
     if (!activeBoardId) return;
     const newCard: Card = {
@@ -98,6 +138,7 @@ export function useBoard() {
       column: "todo",
       createdAt: Date.now(),
       subTasks,
+      tagId,
     };
     setBoards((prev) =>
       prev.map((b) =>
@@ -186,19 +227,38 @@ export function useBoard() {
 
   const deleteBoard = (id: string) => {
     setBoards((prevBoards) => {
-      if (!prevBoards) return []; // segurança extra, mas prevBoards nunca deve ser null
+      if (!prevBoards) return [];
       return prevBoards.filter((b) => b.id !== id);
     });
 
     setActiveBoardId((prevId) => {
-      // se o board ativo foi deletado, define o primeiro board existente como ativo
       if (prevId === id) {
-        return boards.length > 0 ? boards[0].id : null;
+        // Encontra o primeiro board disponível que não seja o deletado
+        const remainingBoards = boards.filter(b => b.id !== id);
+        return remainingBoards.length > 0 ? remainingBoards[0].id : null;
       }
       return prevId;
     });
   };
 
+  const addTag = (name: string): Tag => {
+    if (!activeBoardId) throw new Error("Nenhum board ativo para adicionar tag.");
+
+    const newTag: Tag = {
+      id: crypto.randomUUID(),
+      name,
+      color: generateRandomColor(),
+    };
+
+    setBoards((prev) =>
+      prev.map((b) =>
+        b.id === activeBoardId
+          ? { ...b, availableTags: [...b.availableTags, newTag] }
+          : b
+      )
+    );
+    return newTag;
+  };
 
   return {
     boards,
@@ -209,6 +269,8 @@ export function useBoard() {
     editBoard,
     deleteBoard,
     board: activeBoard?.cards ?? [],
+    availableTags: activeBoard?.availableTags ?? [], // Exporta as tags disponíveis
+    addTag, // Exporta a função para adicionar tags
     addCard,
     editCard,
     removeCard,

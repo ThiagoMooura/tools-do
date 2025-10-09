@@ -1,7 +1,8 @@
+
 "use client"
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useBoard, BoardData, Card, Priority, SubTask } from '@/hooks/useBoard';
+import { useBoard, BoardData, Card, Priority, SubTask, Tag } from '@/hooks/useBoard';
 
 interface BoardContextType {
   boards: BoardData[];
@@ -12,7 +13,9 @@ interface BoardContextType {
   editBoard: (id: string, newName: string) => void;
   deleteBoard: (id: string) => void;
   board: Card[];
-  addCard: (title: string, priority: Priority, description?: string, subTasks?: SubTask[]) => void;
+  availableTags: Tag[]; // Nova propriedade
+  addTag: (name: string) => Tag; // Nova função
+  addCard: (title: string, priority: Priority, description?: string, subTasks?: SubTask[], tagId?: string) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, column: "todo" | "doing" | "done") => void;
@@ -23,10 +26,10 @@ interface BoardContextType {
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
 
 export const BoardProvider = ({ children }: { children: ReactNode }) => {
-  const { boards, activeBoard, activeBoardId, addBoard, selectBoard, editBoard, deleteBoard, board, addCard, editCard, removeCard, moveCard, moveCardToOrder, toggleSubTask } = useBoard();
+  const { boards, activeBoard, activeBoardId, addBoard, selectBoard, editBoard, deleteBoard, board, availableTags, addTag, addCard, editCard, removeCard, moveCard, moveCardToOrder, toggleSubTask } = useBoard();
 
   return (
-    <BoardContext.Provider value={{ boards, activeBoard, activeBoardId, addBoard, selectBoard, editBoard, deleteBoard, board, addCard, editCard, removeCard, moveCard, moveCardToOrder, toggleSubTask }}>
+    <BoardContext.Provider value={{ boards, activeBoard, activeBoardId, addBoard, selectBoard, editBoard, deleteBoard, board, availableTags, addTag, addCard, editCard, removeCard, moveCard, moveCardToOrder, toggleSubTask }}>
       {children}
     </BoardContext.Provider>
   );
@@ -35,7 +38,7 @@ export const BoardProvider = ({ children }: { children: ReactNode }) => {
 export const useBoardContext = () => {
   const context = useContext(BoardContext);
   if (context === undefined) {
-    throw new Error('useBoardContext must be used within a BoardProvider');
+    throw new Error("useBoardContext must be used within a BoardProvider");
   }
   return context;
 };
