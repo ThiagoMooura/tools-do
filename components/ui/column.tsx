@@ -19,7 +19,12 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import React from "react"; // Importe React
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
@@ -90,6 +95,19 @@ export const Column = React.memo(function Column({
     setTagsInput((prev) => prev.filter((tag) => tag.id !== id));
   };
 
+  const fixedColors = [
+  { name: "Vermelho", value: "#EF4444" },
+  { name: "Verde", value: "#22C55E" },
+  { name: "Azul", value: "#3B82F6" },
+  { name: "Amarelo", value: "#EAB308" },
+  { name: "Roxo", value: "#A855F7" },
+  { name: "Rosa", value: "#EC4899" },
+  { name: "Cinza", value: "#6B7280" },
+];
+
+
+
+
   const handleSave = () => {
     if (!titleInput.trim()) return;
 
@@ -132,7 +150,10 @@ export const Column = React.memo(function Column({
                 : "bg-green-500"
             }`}
           ></span>
-          {title} ({cards.length})
+          {title}
+          <span className="text-muted-foreground ml-1">  
+          ({cards.length})
+          </span> 
         </h2>
 
         <Button variant="ghost" className="-mb-1">
@@ -214,7 +235,7 @@ export const Column = React.memo(function Column({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
+              {/* <div className="flex flex-col gap-2">
                 <h3 className="text-sm font-medium">Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {tagsInput.map((tag) => (
@@ -250,7 +271,66 @@ export const Column = React.memo(function Column({
                   />
                   <Button onClick={handleAddTagTemp}>Adicionar Tag</Button>
                 </div>
-              </div>
+              </div> */}
+
+              <div className="flex flex-col gap-2">
+      <h3 className="text-sm font-medium">Tags</h3>
+      <div className="flex flex-wrap gap-2">
+        {tagsInput.map((tag) => (
+          <div
+            key={tag.id}
+            className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white"
+            style={{ backgroundColor: tag.color }}
+          >
+            {tag.name}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-4 w-4 text-white hover:bg-white hover:text-black"
+              onClick={() => handleRemoveTagTemp(tag.id)}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-2 items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-10 h-9 p-0 rounded-md"
+              style={{ backgroundColor: tagInputColor }}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="p-2 grid grid-cols-4 gap-2">
+            {fixedColors.map((color) => (
+              <DropdownMenuItem
+                key={color.value}
+                onClick={() => setTagInputColor(color.value)}
+                className="p-0 m-0 cursor-pointer hover:bg-transparent"
+              >
+                <div
+                  title={color.name}
+                  className="w-6 h-6 rounded-md border"
+                  style={{ backgroundColor: color.value }}
+                />
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <input
+          placeholder="Nome da tag"
+          value={tagInputText}
+          onChange={(e) => setTagInputText(e.target.value)}
+          className="border rounded-md px-3 py-2 flex-1"
+        />
+
+        <Button onClick={handleAddTagTemp}>Adicionar Tag</Button>
+      </div>
+    </div>
 
               <Button onClick={handleSave}>
                 {editingCard ? "Salvar alterações" : "Adicionar"}
