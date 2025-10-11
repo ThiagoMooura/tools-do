@@ -87,7 +87,7 @@ export function CardBoard({
   return (
     // A div externa agora é o elemento que a dnd-kit irá mover
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Card className="group relative cursor-grab active:cursor-grabbing">
+      <Card className="group relative cursor-grab active:cursor-grabbing shadow-xl border-none">
         <CardHeader className="flex-col items-start gap-2">
           <div className="flex flex-row justify-between items-center w-full">
             <div className="flex gap-2 items-center">
