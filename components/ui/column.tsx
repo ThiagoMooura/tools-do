@@ -71,7 +71,7 @@ export const Column = React.memo(function Column({
   toggleSubTask,
 }: ColumnProps) {
   const { setNodeRef } = useDroppable({ id: columnId });
-  const { activeBoard, removeCard: removeCardFromContext } = useBoardContext();
+  const { activeBoard, removeCard: removeCardFromContext, editCard: editCardInContext } = useBoardContext();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
@@ -109,6 +109,25 @@ export const Column = React.memo(function Column({
 
   const handleDeleteAllCards = () => {
     cards.forEach(card => removeCardFromContext(card.id));
+  };
+
+  const handleAddSubTask = (cardId: string, subTaskTitle: string) => {
+    const cardToUpdate = cards.find(card => card.id === cardId);
+    if (cardToUpdate) {
+      const newSubTask: SubTask = { id: crypto.randomUUID(), title: subTaskTitle, done: false };
+      const updatedSubTasks = [...(cardToUpdate.subTasks || []), newSubTask];
+      editCardInContext(cardId, { subTasks: updatedSubTasks });
+    }
+  };
+
+  const handleEditSubTask = (cardId: string, subTaskId: string, newTitle: string) => {
+    const cardToUpdate = cards.find(card => card.id === cardId);
+    if (cardToUpdate) {
+      const updatedSubTasks = (cardToUpdate.subTasks || []).map(st =>
+        st.id === subTaskId ? { ...st, title: newTitle } : st
+      );
+      editCardInContext(cardId, { subTasks: updatedSubTasks });
+    }
   };
 
   const [sortBy, setSortBy] = useState<"none" | "priority-asc" | "priority-desc" | "tag-asc" | "tag-desc">("none");
@@ -259,6 +278,8 @@ export const Column = React.memo(function Column({
                 onDelete={() => removeCard(card.id)}
                 onMove={moveCard}
                 onToggleSubTask={toggleSubTask}
+                onAddSubTask={handleAddSubTask}
+                onEditSubTask={handleEditSubTask}
               />
             ))}
           </div>
@@ -267,5 +288,3 @@ export const Column = React.memo(function Column({
     </div>
   );
 })
-
-

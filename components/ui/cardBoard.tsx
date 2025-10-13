@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -14,6 +15,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
+  Plus,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -30,6 +32,8 @@ import { Card as CardType, SubTask } from "@/hooks/useBoard";
 import { useBoardContext } from "@/app/contexts/boardContext";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   card: CardType;
@@ -37,6 +41,8 @@ interface Props {
   onDelete: () => void;
   onMove: (id: string, column: "todo" | "doing" | "done") => void;
   onToggleSubTask: (cardId: string, subTaskId: string) => void;
+  onAddSubTask: (cardId: string, title: string) => void;
+  onEditSubTask: (cardId: string, subTaskId: string, newTitle: string) => void;
 }
 
 export function CardBoard({
@@ -45,6 +51,8 @@ export function CardBoard({
   onDelete,
   onMove,
   onToggleSubTask,
+  onAddSubTask,
+  onEditSubTask,
 }: Props) {
   const { activeBoard } = useBoardContext();
   const {
@@ -84,6 +92,37 @@ export function CardBoard({
       ? "bg-amber-600"
       : "bg-green-600";
 
+  const [newSubTaskText, setNewSubTaskText] = useState("");
+  const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
+  const [editingSubTaskText, setEditingSubTaskText] = useState("");
+  const [showAddSubTaskInput, setShowAddSubTaskInput] = useState(false);
+
+  const handleAddSubTask = () => {
+    if (newSubTaskText.trim()) {
+      onAddSubTask(card.id, newSubTaskText);
+      setNewSubTaskText("");
+      setShowAddSubTaskInput(false);
+    }
+  };
+
+  const handleEditSubTask = (subTaskId: string, currentTitle: string) => {
+    setEditingSubTaskId(subTaskId);
+    setEditingSubTaskText(currentTitle);
+  };
+
+  const handleSaveEditedSubTask = (subTaskId: string) => {
+    if (editingSubTaskText.trim()) {
+      onEditSubTask(card.id, subTaskId, editingSubTaskText);
+      setEditingSubTaskId(null);
+      setEditingSubTaskText("");
+    }
+  };
+
+  const handleCancelEditSubTask = () => {
+    setEditingSubTaskId(null);
+    setEditingSubTaskText("");
+  };
+
   return (
     // A div externa agora é o elemento que a dnd-kit irá mover
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
@@ -120,29 +159,64 @@ export function CardBoard({
               {card.subTasks.map((st: SubTask) => (
                 <div
                   key={st.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => onToggleSubTask(card.id, st.id)}
+                  className="flex items-center gap-2"
                 >
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
                     ${
                       st.done
                         ? "bg-blue-600 border-blue-600"
                         : "border-gray-400 bg-white"
                     }`}
+                    onClick={() => onToggleSubTask(card.id, st.id)}
                   >
                     {st.done && <Check className="w-3 h-3 text-white" />}
                   </div>
-                  <span
-                    className={
-                      st.done ? "text-muted-foreground" : ""
-                    }
-                  >
-                    {st.title}
-                  </span>
+                  {editingSubTaskId === st.id ? (
+                    <Input
+                      value={editingSubTaskText}
+                      onChange={(e) => setEditingSubTaskText(e.target.value)}
+                      onBlur={() => handleSaveEditedSubTask(st.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveEditedSubTask(st.id);
+                        if (e.key === 'Escape') handleCancelEditSubTask();
+                      }}
+                      autoFocus
+                      className="flex-1"
+                    />
+                  ) : (
+                    <span
+                      className={`flex-1 ${st.done ? "text-muted-foreground line-through" : ""} cursor-pointer`}
+                      onClick={() => handleEditSubTask(st.id, st.title)}
+                    >
+                      {st.title}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
+          )}
+          {showAddSubTaskInput ? (
+            <div className="flex gap-2 mt-2">
+              <Input
+                placeholder="Adicionar nova sub-tarefa"
+                value={newSubTaskText}
+                onChange={(e) => setNewSubTaskText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddSubTask()}
+                autoFocus
+              />
+              <Button onClick={handleAddSubTask} disabled={!newSubTaskText.trim()} size="icon">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground mt-2"
+              onClick={() => setShowAddSubTaskInput(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Adicionar sub-tarefa
+            </Button>
           )}
         </CardContent>
 
@@ -204,3 +278,4 @@ export function CardBoard({
     </div>
   );
 }
+

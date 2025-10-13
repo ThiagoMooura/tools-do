@@ -4,11 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectValue, SelectTrigger } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Check, Edit, GripVertical } from "lucide-react";
 import { Card, Priority, SubTask, Tag } from "@/hooks/useBoard";
 import { useBoardContext } from "@/app/contexts/boardContext";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface CardFormProps {
   initialData?: Card | null;
@@ -23,6 +39,99 @@ interface CardFormProps {
   onCancel: () => void;
 }
 
+interface SortableSubTaskItemProps {
+  subTask: SubTask;
+  onRemove: (id: string) => void;
+  onEditClick: (subTask: SubTask) => void;
+  onSaveEdit: (id: string) => void;
+  onCancelEdit: () => void;
+  isEditing: boolean;
+  editingText: string;
+  onEditingTextChange: (text: string) => void;
+}
+
+const SortableSubTaskItem: React.FC<SortableSubTaskItemProps> = ({
+  subTask,
+  onRemove,
+  onEditClick,
+  onSaveEdit,
+  onCancelEdit,
+  isEditing,
+  editingText,
+  onEditingTextChange,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: subTask.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between rounded-md bg-muted p-2"
+    >
+      <div className="flex items-center flex-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 mr-2 cursor-grab"
+          {...listeners}
+          {...attributes}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </Button>
+        {isEditing ? (
+          <Input
+            value={editingText}
+            onChange={(e) => onEditingTextChange(e.target.value)}
+            onBlur={() => onSaveEdit(subTask.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onSaveEdit(subTask.id);
+              if (e.key === 'Escape') onCancelEdit();
+            }}
+            autoFocus
+            className="flex-1 mr-2"
+          />
+        ) : (
+          <span className="flex-1" onClick={() => onEditClick(subTask)}>{subTask.title}</span>
+        )}
+      </div>
+      <div className="flex gap-1">
+        {isEditing ? (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onSaveEdit(subTask.id)}
+            className="h-6 w-6"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onEditClick(subTask)}
+            className="h-6 w-6"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onRemove(subTask.id)}
+          className="h-6 w-6"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export const CardForm: React.FC<CardFormProps> = ({
   initialData,
   columnId,
@@ -36,8 +145,17 @@ export const CardForm: React.FC<CardFormProps> = ({
   const [subTaskInputText, setSubTaskInputText] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(initialData?.tagId);
   const [newTagName, setNewTagName] = useState("");
+  const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
+  const [editingSubTaskText, setEditingSubTaskText] = useState("");
 
   const { availableTags, addTag } = useBoardContext();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (initialData) {
@@ -55,6 +173,8 @@ export const CardForm: React.FC<CardFormProps> = ({
     }
     setNewTagName("");
     setSubTaskInputText("");
+    setEditingSubTaskId(null);
+    setEditingSubTaskText("");
   }, [initialData]);
 
   const handleAddSubTaskTemp = () => {
@@ -68,6 +188,28 @@ export const CardForm: React.FC<CardFormProps> = ({
 
   const handleRemoveSubTaskTemp = (id: string) => {
     setSubTasksInput((prev) => prev.filter((st) => st.id !== id));
+  };
+
+  const handleEditSubTaskClick = (subTask: SubTask) => {
+    setEditingSubTaskId(subTask.id);
+    setEditingSubTaskText(subTask.title);
+  };
+
+  const handleSaveEditedSubTask = (id: string) => {
+    if (editingSubTaskText.trim()) {
+      setSubTasksInput((prev) =>
+        prev.map((st) =>
+          st.id === id ? { ...st, title: editingSubTaskText.trim() } : st
+        )
+      );
+    }
+    setEditingSubTaskId(null);
+    setEditingSubTaskText("");
+  };
+
+  const handleCancelEditSubTask = () => {
+    setEditingSubTaskId(null);
+    setEditingSubTaskText("");
   };
 
   const handleAddNewTag = () => {
@@ -94,8 +236,25 @@ export const CardForm: React.FC<CardFormProps> = ({
     });
   };
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setSubTasksInput((subTasks) => {
+        const oldIndex = subTasks.findIndex((st) => st.id === active.id);
+        const newIndex = subTasks.findIndex((st) => st.id === over?.id);
+        if (oldIndex === -1 || newIndex === -1) return subTasks;
+
+        const newSubTasks = [...subTasks];
+        const [movedItem] = newSubTasks.splice(oldIndex, 1);
+        newSubTasks.splice(newIndex, 0, movedItem);
+        return newSubTasks;
+      });
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 p-4 overflow-y-auto h-full">
       <div className="grid gap-2">
         <Label htmlFor="title">Título</Label>
         <Input
@@ -168,25 +327,33 @@ export const CardForm: React.FC<CardFormProps> = ({
 
       <div className="grid gap-2">
         <Label>Sub-tarefas (opcional)</Label>
-        <div className="flex flex-col gap-2">
-          {subTasksInput.map((st) => (
-            <div
-              key={st.id}
-              className="flex items-center justify-between rounded-md bg-muted p-2"
-            >
-              <span>{st.title}</span>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleRemoveSubTaskTemp(st.id)}
-                className="h-6 w-6"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={subTasksInput.map((st) => st.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col gap-2">
+              {subTasksInput.map((st) => (
+                <SortableSubTaskItem
+                  key={st.id}
+                  subTask={st}
+                  onRemove={handleRemoveSubTaskTemp}
+                  onEditClick={handleEditSubTaskClick}
+                  onSaveEdit={handleSaveEditedSubTask}
+                  onCancelEdit={handleCancelEditSubTask}
+                  isEditing={editingSubTaskId === st.id}
+                  editingText={editingSubTaskText}
+                  onEditingTextChange={setEditingSubTaskText}
+                />
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
+          </SortableContext>
+        </DndContext>
+        <div className="flex gap-2 mt-2">
           <Input
             placeholder="Adicionar sub-tarefa"
             value={subTaskInputText}

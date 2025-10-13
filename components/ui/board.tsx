@@ -155,6 +155,8 @@ export function Board() {
             onDelete={() => {}}
             onMove={() => {}}
             onToggleSubTask={() => {}}
+            onAddSubTask={() => {}}
+            onEditSubTask={() => {}}
           />
         ) : null}
       </DragOverlay>
