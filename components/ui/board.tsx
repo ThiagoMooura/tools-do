@@ -113,7 +113,8 @@ export function Board() {
     >
       <div className="grid grid-cols-3 gap-6 py-4 px-20 h-screen">
         <Column
-          title="To Do"
+          title="A Fazer"
+          // title="To Do"
           columnId="todo"
           cards={todoCards}
           addCard={addCard}
@@ -123,7 +124,8 @@ export function Board() {
           toggleSubTask={toggleSubTask}
         />
         <Column
-          title="In Progress"
+          title="Em Andamento"
+          // title="In Progress"
           columnId="doing"
           cards={doingCards}
           addCard={addCard}
@@ -133,7 +135,8 @@ export function Board() {
           toggleSubTask={toggleSubTask}
         />
         <Column
-          title="Completed"
+          title="Concluído"
+          // title="Completed"
           columnId="done"
           cards={doneCards}
           addCard={addCard}

@@ -154,7 +154,8 @@ export const Column = React.memo(function Column({
                 : "bg-green-500"
             }`}
           ></span>
-          {title} ({cards.length})
+          {title} 
+          <span className="text-muted-foreground ml-1">({cards.length})</span>
         </h2>
 
         <DropdownMenu>
@@ -217,14 +218,14 @@ export const Column = React.memo(function Column({
           <SheetTrigger asChild>
             <Button
               variant="outline"
-              className="px-4 py-2 mb-5 rounded-xl w-full text-3xl font-medium h-12 shadow-2xl border-none"
+              className="px-4 py-2 mb-5 rounded-xl w-full text-3xl font-medium h-12 shadow-xl border-none"
               onClick={handleOpenSheetForAdd}
             >
               <Plus strokeWidth={3.5}/>
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="right" className="w-[450px] sm:w-[600px] lg:w-[700px]">
+          <SheetContent side="right" className="w-[450px] sm:w-[600px] lg:w-[700px] bg-sidebar border-none">
             <SheetHeader>
               <SheetTitle>
                 {editingCard ? "Editar tarefa" : "Nova tarefa"}

@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
+
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ export function CardBoard({
   return (
     // A div externa agora é o elemento que a dnd-kit irá mover
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Card className="group relative cursor-grab active:cursor-grabbing shadow-xl border-none">
+      <Card className="group relative cursor-grab active:cursor-grabbing shadow-md hover:shadow-lg transition-shadow duration-200 border-none">
         <CardHeader className="flex-col items-start gap-2">
           <div className="flex flex-row justify-between items-center w-full">
             <div className="flex gap-2 items-center">
@@ -146,11 +146,12 @@ export function CardBoard({
           )}
         </CardContent>
 
-        <CardFooter className="justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute bottom-0 right-0 p-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
           {card.column !== "todo" && (
             <Button
               variant="outline"
               size="icon"
+              className="bg-background/80 backdrop-blur-sm"
               onClick={() =>
                 onMove(card.id, card.column === "doing" ? "todo" : "doing")
               }
@@ -162,6 +163,7 @@ export function CardBoard({
             <Button
               variant="outline"
               size="icon"
+              className="bg-background/80 backdrop-blur-sm"
               onClick={() =>
                 onMove(card.id, card.column === "todo" ? "doing" : "done")
               }
@@ -169,12 +171,12 @@ export function CardBoard({
               <ArrowRight />
             </Button>
           )}
-          <Button variant="outline" size="icon" onClick={onEdit}>
+          <Button variant="outline" size="icon" className="bg-background/80 backdrop-blur-sm" onClick={onEdit}>
             <Edit />
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="icon">
+              <Button variant="destructive" size="icon" className="bg-background/80 backdrop-blur-sm">
                 <Trash2 />
               </Button>
             </AlertDialogTrigger>
@@ -197,7 +199,7 @@ export function CardBoard({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </CardFooter>
+        </div>
       </Card>
     </div>
   );

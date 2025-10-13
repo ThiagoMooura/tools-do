@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  Sun, Moon, SidebarIcon, Code, Palette, BadgeCheck, Check, Languages, Plus, LayoutDashboard, MoreVertical, Edit, Trash2
+  Sun, Moon, SidebarIcon, Code, Palette, BadgeCheck, Check, Languages, Plus, LayoutDashboard, MoreVertical, Edit, Trash2, EditIcon
 } from "lucide-react";
 import {
   AlertDialog,
@@ -113,6 +113,12 @@ export default function BoardSidebar() {
                   {!collapsed && "Criar Novo Board"}
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                className="w-full justify-start">
+                  <EditIcon className="w-4 h-4" />
+                  {!collapsed && "Criar board"}
+              </Button>
             </SidebarMenuItem>
 
         <SidebarMenu className="flex-1 px-2">
