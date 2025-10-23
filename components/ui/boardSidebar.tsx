@@ -86,7 +86,7 @@ export default function BoardSidebar() {
             <SidebarIcon className="w-4 h-4" />
           </Button>
         </SidebarHeader>
-                    <SidebarMenuItem>
+                    <SidebarMenuItem className="px-2">
               {isCreatingBoard && !collapsed ? (
                 <div className="flex flex-col gap-2 w-full">
                   <Input
@@ -104,21 +104,23 @@ export default function BoardSidebar() {
                   </div>
                 </div>
               ) : (
-                <Button
-                  variant="ghost"
-                  className="w-full text-purple-500 hover:text-purple-600"
-                  onClick={() => setIsCreatingBoard(true)}
-                >
-                  <Plus className="w-4 h-4" />
-                  {!collapsed && "Criar Novo Board"}
-                </Button>
-              )}
+                // <Button
+                //   variant="ghost"
+                //   className="w-full text-purple-500 hover:text-purple-600"
+                //   onClick={() => setIsCreatingBoard(true)}
+                // >
+                //   <Plus className="w-4 h-4" />
+                //   {!collapsed && "Criar Novo Board"}
+                // </Button>
+                
               <Button
                 variant="ghost"
-                className="w-full justify-start">
+                onClick={() => setIsCreatingBoard(true)}
+                className={`w-full ${collapsed ? "justify-center" : "justify-start"}`}>
                   <EditIcon className="w-4 h-4" />
                   {!collapsed && "Criar board"}
               </Button>
+              )}
             </SidebarMenuItem>
 
         <SidebarMenu className="flex-1 px-2">
@@ -162,7 +164,7 @@ export default function BoardSidebar() {
                   <div className="flex items-center justify-between w-full">
                     <Button
                       variant={boardItem.id === activeBoardId ? "secondary" : "ghost"}
-                      className="flex-1 justify-start"
+                      className={`flex-1 ${collapsed ? "justify-center" : "justify-start"}`}
                       onClick={() => selectBoard(boardItem.id)}
                     >
                       <LayoutDashboard className="w-4 h-4" />
