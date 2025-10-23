@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,37 @@ import {
   SheetTrigger,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Plus, MoreVertical } from "lucide-react";
-import { useState } from "react";
+import { Plus, MoreVertical, ArrowDownNarrowWide, ArrowUpNarrowWide, TagIcon, Trash2 } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Card, Priority, SubTask } from "@/hooks/useBoard";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import React from "react";
+import { useBoardContext } from "@/app/contexts/boardContext";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { CardForm } from "@/components/ui/cardForm";
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
@@ -27,7 +51,8 @@ interface ColumnProps {
     title: string,
     priority: Priority,
     description?: string,
-    subTasks?: SubTask[]
+    subTasks?: SubTask[],
+    tagId?: string
   ) => void;
   editCard: (id: string, updates: Partial<Card>) => void;
   removeCard: (id: string) => void;
@@ -35,7 +60,7 @@ interface ColumnProps {
   toggleSubTask: (cardId: string, subTaskId: string) => void;
 }
 
-export function Column({
+export const Column = React.memo(function Column({
   columnId,
   title,
   cards,
@@ -46,53 +71,94 @@ export function Column({
   toggleSubTask,
 }: ColumnProps) {
   const { setNodeRef } = useDroppable({ id: columnId });
+  const { activeBoard, removeCard: removeCardFromContext, editCard: editCardInContext } = useBoardContext();
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [titleInput, setTitleInput] = useState("");
-  const [descInput, setDescInput] = useState("");
-  const [priority, setPriority] = useState<Priority>("low");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
 
-  const [subTasksInput, setSubTasksInput] = useState<SubTask[]>([]);
-  const [subTaskInputText, setSubTaskInputText] = useState("");
-
-  const handleAddSubTaskTemp = () => {
-    if (!subTaskInputText.trim()) return;
-    setSubTasksInput((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), title: subTaskInputText, done: false },
-    ]);
-    setSubTaskInputText("");
+  const handleOpenSheetForEdit = (card: Card) => {
+    setEditingCard(card);
+    setIsSheetOpen(true);
   };
 
-  const handleRemoveSubTaskTemp = (id: string) => {
-    setSubTasksInput((prev) => prev.filter((st) => st.id !== id));
+  const handleOpenSheetForAdd = () => {
+    setEditingCard(null);
+    setIsSheetOpen(true);
   };
 
-  const handleSave = () => {
-    if (!titleInput.trim()) return;
-
-    const newCardData = {
-      title: titleInput,
-      description: descInput,
-      priority,
-      subTasks: subTasksInput,
-    };
-
+  const handleSaveCard = (data: {
+    title: string;
+    description?: string;
+    priority: Priority;
+    subTasks?: SubTask[];
+    tagId?: string;
+  }) => {
     if (editingCard) {
-      editCard(editingCard.id, newCardData);
+      editCard(editingCard.id, data);
     } else {
-      addCard(titleInput, priority, descInput, subTasksInput);
+      addCard(data.title, data.priority, data.description, data.subTasks, data.tagId);
     }
-
-    setIsOpen(false);
-    setTitleInput("");
-    setDescInput("");
-    setPriority("low");
-    setSubTasksInput([]);
-    setSubTaskInputText("");
+    setIsSheetOpen(false);
     setEditingCard(null);
   };
+
+  const handleCancelForm = () => {
+    setIsSheetOpen(false);
+    setEditingCard(null);
+  };
+
+  const handleDeleteAllCards = () => {
+    cards.forEach(card => removeCardFromContext(card.id));
+  };
+
+  const handleAddSubTask = (cardId: string, subTaskTitle: string) => {
+    const cardToUpdate = cards.find(card => card.id === cardId);
+    if (cardToUpdate) {
+      const newSubTask: SubTask = { id: crypto.randomUUID(), title: subTaskTitle, done: false };
+      const updatedSubTasks = [...(cardToUpdate.subTasks || []), newSubTask];
+      editCardInContext(cardId, { subTasks: updatedSubTasks });
+    }
+  };
+
+  const handleEditSubTask = (cardId: string, subTaskId: string, newTitle: string) => {
+    const cardToUpdate = cards.find(card => card.id === cardId);
+    if (cardToUpdate) {
+      const updatedSubTasks = (cardToUpdate.subTasks || []).map(st =>
+        st.id === subTaskId ? { ...st, title: newTitle } : st
+      );
+      editCardInContext(cardId, { subTasks: updatedSubTasks });
+    }
+  };
+
+  const [sortBy, setSortBy] = useState<"none" | "priority-asc" | "priority-desc" | "tag-asc" | "tag-desc">("none");
+
+  const sortedCards = useMemo(() => {
+    const sortableCards = [...cards];
+    if (sortBy === "priority-asc") {
+      sortableCards.sort((a, b) => {
+        const priorityOrder = { low: 0, medium: 1, high: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      });
+    } else if (sortBy === "priority-desc") {
+      sortableCards.sort((a, b) => {
+        const priorityOrder = { low: 0, medium: 1, high: 2 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
+    } else if (sortBy === "tag-asc") {
+      sortableCards.sort((a, b) => {
+        const tagA = activeBoard?.availableTags.find(tag => tag.id === a.tagId)?.name || "";
+        const tagB = activeBoard?.availableTags.find(tag => tag.id === b.tagId)?.name || "";
+        return tagA.localeCompare(tagB);
+      });
+    } else if (sortBy === "tag-desc") {
+      sortableCards.sort((a, b) => {
+        const tagA = activeBoard?.availableTags.find(tag => tag.id === a.tagId)?.name || "";
+        const tagB = activeBoard?.availableTags.find(tag => tag.id === b.tagId)?.name || "";
+        return tagB.localeCompare(tagA);
+      });
+    }
+    return sortableCards;
+  }, [cards, sortBy, activeBoard?.availableTags]);
 
   return (
     <div className="rounded-xl p-4 flex flex-col">
@@ -107,26 +173,78 @@ export function Column({
                 : "bg-green-500"
             }`}
           ></span>
-          {title} ({cards.length})
+          {title} 
+          <span className="text-muted-foreground ml-1">({cards.length})</span>
         </h2>
 
-        <Button variant="ghost" className="-mb-1">
-          <MoreVertical />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="-mb-1">
+              <MoreVertical />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <ArrowDownNarrowWide className="w-4 h-4 mr-2" /> Ordenar por
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => setSortBy("none")}>Padrão</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("priority-asc")}>
+                  <ArrowUpNarrowWide className="w-4 h-4 mr-2" /> Prioridade (Crescente)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("priority-desc")}>
+                  <ArrowDownNarrowWide className="w-4 h-4 mr-2" /> Prioridade (Decrescente)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("tag-asc")}>
+                  <TagIcon className="w-4 h-4 mr-2" /> Tag (A-Z)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("tag-desc")}>
+                  <TagIcon className="w-4 h-4 mr-2" /> Tag (Z-A)
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                  <Trash2 className="w-4 h-4 mr-2" /> Deletar todos os cards
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Deletar todos os cards?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir TODOS os cards desta coluna? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAllCards}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Deletar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="my-4 flex-1 flex flex-col">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button
               variant="outline"
-              className="px-4 py-2 mb-5 rounded-xl w-full text-3xl font-medium h-12"
+              className="px-4 py-2 mb-5 rounded-xl w-full text-3xl font-medium h-12 shadow-xl border-none"
+              onClick={handleOpenSheetForAdd}
             >
-              <Plus strokeWidth={3.5} />
+              <Plus strokeWidth={3.5}/>
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="right" className="w-[400px] sm:w-[500px]">
+          <SheetContent side="right" className="w-[450px] sm:w-[600px] lg:w-[700px] bg-sidebar border-none">
             <SheetHeader>
               <SheetTitle>
                 {editingCard ? "Editar tarefa" : "Nova tarefa"}
@@ -137,85 +255,31 @@ export function Column({
                   : `Preencha as informações para adicionar uma nova to-do à coluna ${title}.`}
               </SheetDescription>
             </SheetHeader>
-
-            <div className="flex flex-col gap-4 mt-6">
-              <input
-                placeholder="Título"
-                value={titleInput}
-                onChange={(e) => setTitleInput(e.target.value)}
-                className="border rounded-md px-3 py-2"
-              />
-              <textarea
-                placeholder="Descrição (opcional)"
-                value={descInput}
-                onChange={(e) => setDescInput(e.target.value)}
-                className="border rounded-md px-3 py-2"
-              />
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-                className="border rounded-md px-3 py-2"
-              >
-                <option value="low">Baixa</option>
-                <option value="medium">Média</option>
-                <option value="high">Alta</option>
-              </select>
-
-              <div className="flex flex-col gap-2">
-                {subTasksInput.map((st) => (
-                  <div
-                    key={st.id}
-                    className="flex justify-between items-center"
-                  >
-                    <span>{st.title}</span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRemoveSubTaskTemp(st.id)}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <input
-                    placeholder="Adicionar sub-tarefa"
-                    value={subTaskInputText}
-                    onChange={(e) => setSubTaskInputText(e.target.value)}
-                    className="border rounded-md px-3 py-2 flex-1"
-                  />
-                  <Button onClick={handleAddSubTaskTemp}>Adicionar</Button>
-                </div>
-              </div>
-
-              <Button onClick={handleSave}>
-                {editingCard ? "Salvar alterações" : "Adicionar"}
-              </Button>
-            </div>
+            <CardForm
+              initialData={editingCard}
+              columnId={columnId}
+              onSave={handleSaveCard}
+              onCancel={handleCancelForm}
+            />
           </SheetContent>
         </Sheet>
 
         {/* Área de drop e contexto de ordenação */}
         <SortableContext
-          items={cards.map((c) => c.id)}
+          items={sortedCards.map((c) => c.id)}
           strategy={verticalListSortingStrategy}
         >
           <div ref={setNodeRef} className="flex flex-col gap-3 flex-1">
-            {cards.map((card) => (
+            {sortedCards.map((card) => (
               <CardBoard
                 key={card.id}
                 card={card}
-                onEdit={() => {
-                  setEditingCard(card);
-                  setTitleInput(card.title);
-                  setDescInput(card.description || "");
-                  setPriority(card.priority);
-                  setSubTasksInput(card.subTasks || []);
-                  setIsOpen(true);
-                }}
+                onEdit={() => handleOpenSheetForEdit(card)}
                 onDelete={() => removeCard(card.id)}
                 onMove={moveCard}
                 onToggleSubTask={toggleSubTask}
+                onAddSubTask={handleAddSubTask}
+                onEditSubTask={handleEditSubTask}
               />
             ))}
           </div>
@@ -223,4 +287,4 @@ export function Column({
       </div>
     </div>
   );
-}
+})
