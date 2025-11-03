@@ -1,4 +1,4 @@
-
+// useBoard.ts
 import { useState, useEffect } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 
@@ -8,11 +8,6 @@ export type Tag = {
   id: string;
   name: string;
   color: string;
-};
-
-type Board = {
-  id: string;
-  name: string;
 };
 
 export interface SubTask {
@@ -29,28 +24,26 @@ export interface Card {
   column: "todo" | "doing" | "done";
   createdAt: number;
   subTasks?: SubTask[];
-  tagId?: string; // Nova propriedade para a tag
+  tagId?: string;
 }
 
 export interface BoardData {
   id: string;
   name: string;
   cards: Card[];
-  availableTags: Tag[]; // Nova propriedade para tags disponíveis no board
+  availableTags: Tag[];
 }
 
 const STORAGE_KEY = "boardData";
 
-const DEFAULT_TAGS: Omit<Tag, 'id'>[] = [
-  { name: "Estudo", color: "#EF4444" }, // red-500
-  { name: "Trabalho", color: "#3B82F6" }, // blue-500
-  { name: "Diversão", color: "#EC4899" }, // pink-500
-  { name: "Academia", color: "#22C55E" }, // green-500
-  { name: "Casa", color: "#F59E0B" }, // amber-500
-  { name: "Finanças", color: "#6366F1" }, // indigo-500
-  { name: "Projetos Pessoais", color: "#06B6D4" }, // cyan-500
-  { name: "Saúde", color: "#F97316" }, // orange-500
-  { name: "Urgente", color: "#DC2626" }, // red-600
+const DEFAULT_TAGS: Omit<Tag, "id">[] = [
+  { name: "Estudo", color: "#EF4444" },
+  { name: "Trabalho", color: "#3B82F6" },
+  { name: "Diversão", color: "#EC4899" },
+  { name: "Saúde", color: "#F97316" },
+  { name: "Academia", color: "#22C55E" },
+  { name: "Finanças", color: "#6366F1" },
+  { name: "Urgente", color: "#DC2626" },
 ];
 
 function generateRandomColor(): string {
@@ -75,7 +68,6 @@ export function useBoard() {
       try {
         const parsedData = JSON.parse(data);
         if (Array.isArray(parsedData) && parsedData.length > 0) {
-          // Garante que cada board tenha availableTags e preenche com DEFAULT_TAGS se estiver vazio
           const boardsWithTags = parsedData.map((board: BoardData) => ({
             ...board,
             availableTags: board.availableTags && board.availableTags.length > 0
@@ -118,16 +110,14 @@ export function useBoard() {
     setActiveBoardId(newBoard.id);
   };
 
-  const selectBoard = (id: string) => {
-    setActiveBoardId(id);
-  };
+  const selectBoard = (id: string) => setActiveBoardId(id);
 
   const addCard = (
     title: string,
     priority: Priority,
     description?: string,
     subTasks: SubTask[] = [],
-    tagId?: string // Nova propriedade para a tag
+    tagId?: string
   ) => {
     if (!activeBoardId) return;
     const newCard: Card = {
@@ -140,8 +130,8 @@ export function useBoard() {
       subTasks,
       tagId,
     };
-    setBoards((prev) =>
-      prev.map((b) =>
+    setBoards(prev =>
+      prev.map(b =>
         b.id === activeBoardId ? { ...b, cards: [...b.cards, newCard] } : b
       )
     );
@@ -149,12 +139,12 @@ export function useBoard() {
 
   const editCard = (id: string, updates: Partial<Card>) => {
     if (!activeBoardId) return;
-    setBoards((prev) =>
-      prev.map((b) =>
+    setBoards(prev =>
+      prev.map(b =>
         b.id === activeBoardId
           ? {
               ...b,
-              cards: b.cards.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+              cards: b.cards.map(c => (c.id === id ? { ...c, ...updates } : c)),
             }
           : b
       )
@@ -163,10 +153,10 @@ export function useBoard() {
 
   const removeCard = (id: string) => {
     if (!activeBoardId) return;
-    setBoards((prev) =>
-      prev.map((b) =>
+    setBoards(prev =>
+      prev.map(b =>
         b.id === activeBoardId
-          ? { ...b, cards: b.cards.filter((c) => c.id !== id) }
+          ? { ...b, cards: b.cards.filter(c => c.id !== id) }
           : b
       )
     );
@@ -174,13 +164,10 @@ export function useBoard() {
 
   const moveCard = (id: string, column: "todo" | "doing" | "done") => {
     if (!activeBoardId) return;
-    setBoards((prev) =>
-      prev.map((b) =>
+    setBoards(prev =>
+      prev.map(b =>
         b.id === activeBoardId
-          ? {
-              ...b,
-              cards: b.cards.map((c) => (c.id === id ? { ...c, column } : c)),
-            }
+          ? { ...b, cards: b.cards.map(c => (c.id === id ? { ...c, column } : c)) }
           : b
       )
     );
@@ -188,12 +175,12 @@ export function useBoard() {
 
   const toggleSubTask = (cardId: string, subTaskId: string) => {
     if (!activeBoardId) return;
-    setBoards((prev) =>
-      prev.map((b) => {
+    setBoards(prev =>
+      prev.map(b => {
         if (b.id !== activeBoardId) return b;
-        const updatedCards = b.cards.map((card) => {
+        const updatedCards = b.cards.map(card => {
           if (card.id !== cardId) return card;
-          const updatedSubTasks = card.subTasks?.map((st) =>
+          const updatedSubTasks = card.subTasks?.map(st =>
             st.id === subTaskId ? { ...st, done: !st.done } : st
           );
           return { ...card, subTasks: updatedSubTasks };
@@ -205,35 +192,25 @@ export function useBoard() {
 
   const moveCardToOrder = (activeId: string, overId: string) => {
     if (!activeBoardId) return;
-    setBoards((prev) =>
-      prev.map((b) => {
+    setBoards(prev =>
+      prev.map(b => {
         if (b.id !== activeBoardId) return b;
-        const activeIndex = b.cards.findIndex((c) => c.id === activeId);
-        const overIndex = b.cards.findIndex((c) => c.id === overId);
+        const activeIndex = b.cards.findIndex(c => c.id === activeId);
+        const overIndex = b.cards.findIndex(c => c.id === overId);
         if (activeIndex === -1 || overIndex === -1) return b;
-        return {
-          ...b,
-          cards: arrayMove(b.cards, activeIndex, overIndex),
-        };
+        return { ...b, cards: arrayMove(b.cards, activeIndex, overIndex) };
       })
     );
   };
 
   const editBoard = (id: string, newName: string) => {
-    setBoards((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, name: newName } : b))
-    );
+    setBoards(prev => prev.map(b => (b.id === id ? { ...b, name: newName } : b)));
   };
 
   const deleteBoard = (id: string) => {
-    setBoards((prevBoards) => {
-      if (!prevBoards) return [];
-      return prevBoards.filter((b) => b.id !== id);
-    });
-
-    setActiveBoardId((prevId) => {
+    setBoards(prevBoards => prevBoards.filter(b => b.id !== id));
+    setActiveBoardId(prevId => {
       if (prevId === id) {
-        // Encontra o primeiro board disponível que não seja o deletado
         const remainingBoards = boards.filter(b => b.id !== id);
         return remainingBoards.length > 0 ? remainingBoards[0].id : null;
       }
@@ -243,21 +220,41 @@ export function useBoard() {
 
   const addTag = (name: string): Tag => {
     if (!activeBoardId) throw new Error("Nenhum board ativo para adicionar tag.");
-
-    const newTag: Tag = {
-      id: crypto.randomUUID(),
-      name,
-      color: generateRandomColor(),
-    };
-
-    setBoards((prev) =>
-      prev.map((b) =>
+    const newTag: Tag = { id: crypto.randomUUID(), name, color: generateRandomColor() };
+    setBoards(prev =>
+      prev.map(b =>
         b.id === activeBoardId
           ? { ...b, availableTags: [...b.availableTags, newTag] }
           : b
       )
     );
     return newTag;
+  };
+
+  /** ✅ NOVO: remover tag (somente se não for uma das default) */
+  const removeTag = (tagId: string) => {
+    if (!activeBoardId) return;
+
+    setBoards(prev =>
+      prev.map(b => {
+        if (b.id !== activeBoardId) return b;
+
+        const tagToRemove = b.availableTags.find(t => t.id === tagId);
+        if (!tagToRemove) return b;
+
+        // bloqueia remoção de tags padrão
+        const isDefault = DEFAULT_TAGS.some(def => def.name === tagToRemove.name);
+        if (isDefault) return b;
+
+        return {
+          ...b,
+          availableTags: b.availableTags.filter(t => t.id !== tagId),
+          cards: b.cards.map(c =>
+            c.tagId === tagId ? { ...c, tagId: undefined } : c
+          ),
+        };
+      })
+    );
   };
 
   return {
@@ -269,8 +266,9 @@ export function useBoard() {
     editBoard,
     deleteBoard,
     board: activeBoard?.cards ?? [],
-    availableTags: activeBoard?.availableTags ?? [], // Exporta as tags disponíveis
-    addTag, // Exporta a função para adicionar tags
+    availableTags: activeBoard?.availableTags ?? [],
+    addTag,
+    removeTag,
     addCard,
     editCard,
     removeCard,
@@ -279,4 +277,3 @@ export function useBoard() {
     moveCardToOrder,
   };
 }
-

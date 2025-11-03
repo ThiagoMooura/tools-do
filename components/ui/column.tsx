@@ -255,7 +255,7 @@ export const Column = React.memo(function Column({
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="right" className="w-[450px] sm:w-[600px] lg:w-[700px] bg-sidebar border-none flex flex-col">
+          <SheetContent side="right"  className="bg-sidebar border-none flex flex-col">
             <SheetHeader>
               <SheetTitle>
                 {editingCard ? "Editar tarefa" : "Nova tarefa"}
@@ -272,7 +272,7 @@ export const Column = React.memo(function Column({
                 initialData={editingCard}
               />
             </div>
-            <SheetFooter className="flex-row justify-end gap-2 mt-4 pt-4 border-t">
+            <SheetFooter className="flex-row justify-end gap-2 border-t">
               <Button variant="outline" onClick={handleCancelForm}>
                 Cancelar
               </Button>

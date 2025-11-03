@@ -1,10 +1,22 @@
+"use client";
 
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectValue, SelectTrigger } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -12,7 +24,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, X, Check, Edit, GripVertical } from "lucide-react";
+import { Plus, X, Check, Edit, GripVertical, ArrowDown, Minus, AlertTriangle } from "lucide-react";
 import { Card, Priority, SubTask } from "@/hooks/useBoard";
 import { useBoardContext } from "@/app/contexts/boardContext";
 import {
@@ -57,6 +69,18 @@ interface SortableSubTaskItemProps {
   onEditingTextChange: (text: string) => void;
 }
 
+const DEFAULT_TAG_NAMES = [
+  "Estudo",
+  "Trabalho",
+  "Diversão",
+  "Saúde",
+  "Academia",
+  // "Casa",
+  "Finanças",
+  // "Projetos Pessoais",
+  "Urgente",
+];
+
 const SortableSubTaskItem: React.FC<SortableSubTaskItemProps> = ({
   subTask,
   onRemove,
@@ -67,7 +91,8 @@ const SortableSubTaskItem: React.FC<SortableSubTaskItemProps> = ({
   editingText,
   onEditingTextChange,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: subTask.id });
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: subTask.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -96,14 +121,16 @@ const SortableSubTaskItem: React.FC<SortableSubTaskItemProps> = ({
             onChange={(e) => onEditingTextChange(e.target.value)}
             onBlur={() => onSaveEdit(subTask.id)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onSaveEdit(subTask.id);
-              if (e.key === 'Escape') onCancelEdit();
+              if (e.key === "Enter") onSaveEdit(subTask.id);
+              if (e.key === "Escape") onCancelEdit();
             }}
             autoFocus
             className="flex-1 mr-2"
           />
         ) : (
-          <span className="flex-1" onClick={() => onEditClick(subTask)}>{subTask.title}</span>
+          <span className="flex-1" onClick={() => onEditClick(subTask)}>
+            {subTask.title}
+          </span>
         )}
       </div>
       <div className="flex gap-1">
@@ -140,23 +167,26 @@ const SortableSubTaskItem: React.FC<SortableSubTaskItemProps> = ({
 };
 
 export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
-  (
-    {
-      initialData,
-    },
-    ref
-  ) => {
+  ({ initialData }, ref) => {
     const [titleInput, setTitleInput] = useState(initialData?.title || "");
     const [descInput, setDescInput] = useState(initialData?.description || "");
-    const [priority, setPriority] = useState<Priority>(initialData?.priority || "low");
-    const [subTasksInput, setSubTasksInput] = useState<SubTask[]>(initialData?.subTasks || []);
+    const [priority, setPriority] = useState<Priority>(
+      initialData?.priority || "low"
+    );
+    const [subTasksInput, setSubTasksInput] = useState<SubTask[]>(
+      initialData?.subTasks || []
+    );
     const [subTaskInputText, setSubTaskInputText] = useState("");
-    const [selectedTagId, setSelectedTagId] = useState<string | undefined>(initialData?.tagId);
+    const [selectedTagId, setSelectedTagId] = useState<string | undefined>(
+      initialData?.tagId
+    );
     const [newTagName, setNewTagName] = useState("");
-    const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
+    const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(
+      null
+    );
     const [editingSubTaskText, setEditingSubTaskText] = useState("");
 
-    const { availableTags, addTag } = useBoardContext();
+    const { availableTags, addTag, removeTag } = useBoardContext();
 
     const sensors = useSensors(
       useSensor(PointerSensor),
@@ -235,7 +265,9 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
 
     const handleAddNewTag = () => {
       if (newTagName.trim()) {
-        const existingTag = availableTags.find(tag => tag.name.toLowerCase() === newTagName.trim().toLowerCase());
+        const existingTag = availableTags.find(
+          (tag) => tag.name.toLowerCase() === newTagName.trim().toLowerCase()
+        );
         if (existingTag) {
           setSelectedTagId(existingTag.id);
         } else {
@@ -246,15 +278,19 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
       }
     };
 
+    const handleRemoveTag = (tagId: string, tagName: string) => {
+      if (DEFAULT_TAG_NAMES.includes(tagName)) return; // não permite excluir tags padrão
+      removeTag(tagId);
+      if (selectedTagId === tagId) setSelectedTagId(undefined);
+    };
+
     function handleDragEnd(event: DragEndEvent) {
       const { active, over } = event;
-
       if (active.id !== over?.id) {
         setSubTasksInput((subTasks) => {
           const oldIndex = subTasks.findIndex((st) => st.id === active.id);
           const newIndex = subTasks.findIndex((st) => st.id === over?.id);
           if (oldIndex === -1 || newIndex === -1) return subTasks;
-
           const newSubTasks = [...subTasks];
           const [movedItem] = newSubTasks.splice(oldIndex, 1);
           newSubTasks.splice(newIndex, 0, movedItem);
@@ -265,7 +301,7 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
 
     return (
       <div className="flex flex-col gap-4 px-4 max-h-[calc(100vh-200px)] max-w-2xl mx-auto">
-        {/* Seção sempre visível: Título */}
+        {/* Título */}
         <div className="grid gap-2">
           <Label htmlFor="title">Título</Label>
           <Input
@@ -277,7 +313,7 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
           />
         </div>
 
-        {/* Seção sempre visível: Descrição */}
+        {/* Descrição */}
         <div className="grid gap-2">
           <Label htmlFor="description">Descrição</Label>
           <Textarea
@@ -289,62 +325,107 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
           />
         </div>
 
-        {/* Seção sempre visível: Prioridade */}
+        {/* Prioridade */}
         <div className="grid gap-2">
-          <Label htmlFor="priority">Prioridade</Label>
-          <Select value={priority} onValueChange={(value: Priority) => setPriority(value)}>
-            <SelectTrigger id="priority">
-              <SelectValue placeholder="Selecione a prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Baixa</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+  <Label htmlFor="priority">Prioridade</Label>
+  <Select
+    value={priority}
+    onValueChange={(value: Priority) => setPriority(value)}
+  >
+    <SelectTrigger id="priority">
+      <SelectValue placeholder="Selecione a prioridade" />
+    </SelectTrigger>
 
-        {/* Accordion para Tags e Sub-tarefas */}
+    <SelectContent>
+      <SelectItem value="low">
+        <div className="flex items-center gap-2">
+          <ArrowDown className="w-4 h-4" />
+          <span>Baixa</span>
+        </div>
+      </SelectItem>
+      <SelectItem value="medium">
+        <div className="flex items-center gap-2">
+          <Minus className="w-4 h-4" />
+          <span>Média</span>
+        </div>
+      </SelectItem>
+      <SelectItem value="high">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" />
+          <span>Alta</span>
+        </div>
+      </SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
+
+        {/* Accordion */}
         <Accordion type="multiple" className="w-full">
-          {/* Item 1: Tags */}
+          {/* Tags */}
           <AccordionItem value="tags">
             <AccordionTrigger className="hover:no-underline">
               <span className="font-semibold">Tags</span>
               {selectedTagId && (
-                <Badge className="ml-2 bg-blue-500 text-white">1 selecionada</Badge>
+                <Badge className="ml-2 bg-blue-500 text-white">
+                  1 selecionada
+                </Badge>
               )}
             </AccordionTrigger>
             <AccordionContent>
-              <div className="grid gap-4 my-1">
+              <div className="grid gap-4 m-1">
                 <div className="flex flex-wrap gap-2">
-                  {availableTags.map((tag) => (
-                    <Badge
-                      key={tag.id}
-                      style={{ backgroundColor: tag.color, cursor: 'pointer' }}
-                      className={`text-white transition-all ${selectedTagId === tag.id ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}
-                      onClick={() => setSelectedTagId(selectedTagId === tag.id ? undefined : tag.id)}
-                    >
-                      {tag.name}
-                    </Badge>
-                  ))}
-                  {selectedTagId && !availableTags.some(tag => tag.id === selectedTagId) && (
-                    <Badge
-                      style={{ backgroundColor: '#6B7280', cursor: 'pointer' }}
-                      className="text-white ring-2 ring-offset-2 ring-blue-500"
-                      onClick={() => setSelectedTagId(undefined)}
-                    >
-                      Tag Removida
-                    </Badge>
-                  )}
+                  {availableTags.map((tag) => {
+                    const isDefault = DEFAULT_TAG_NAMES.includes(tag.name);
+                    return (
+                      <div
+                        key={tag.id}
+                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all relative hover:ring-1 ${
+                          selectedTagId === tag.id
+                            ? "ring-2 ring-offset-2 ring-blue-500"
+                            : ""
+                        }`}
+                        style={{
+                          backgroundColor: tag.color,
+                          color: "white",
+                          cursor: "default",
+                        }}
+                        onClick={() =>
+                          setSelectedTagId(
+                            selectedTagId === tag.id ? undefined : tag.id
+                          )
+                        }
+                      >
+                        <span>{tag.name}</span>
+                        {!isDefault && (
+                          <button
+                            type="button"
+                            className="transition ml-1 absolute top-0 right-0 -mt-1.5 -mr-1.5 p-1 rounded-full bg-sidebar-ring cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveTag(tag.id, tag.name);
+                            }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+
                 <div className="flex gap-2">
                   <Input
                     placeholder="Adicionar nova tag"
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddNewTag()}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddNewTag()}
                   />
-                  <Button onClick={handleAddNewTag} disabled={!newTagName.trim()} size="sm">
+                  <Button
+                    onClick={handleAddNewTag}
+                    disabled={!newTagName.trim()}
+                    size="sm"
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -352,19 +433,22 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
             </AccordionContent>
           </AccordionItem>
 
-          {/* Item 2: Sub-tarefas */}
+          {/* Sub-tarefas */}
           <AccordionItem value="subtasks">
             <AccordionTrigger className="hover:no-underline">
               <span className="font-semibold">
                 Sub-tarefas
                 {subTasksInput.length > 0 && (
-                  <Badge className="ml-2 bg-blue-500 text-white">{subTasksInput.length}</Badge>
+                  <Badge className="ml-2 bg-blue-500 text-white">
+                    {subTasksInput.length}
+                  </Badge>
                 )}
               </span>
-              
             </AccordionTrigger>
             <AccordionContent>
-              <div className={`grid ${subTasksInput.length > 0 ? 'gap-4' : ''}`}>
+              <div
+                className={`grid ${subTasksInput.length > 0 ? "gap-4" : ""}`}
+              >
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -376,29 +460,36 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
                   >
                     <div className="flex flex-col gap-2">
                       {subTasksInput.map((st) => (
-                          <SortableSubTaskItem
-                            key={st.id}
-                            subTask={st}
-                            onRemove={handleRemoveSubTaskTemp}
-                            onEditClick={handleEditSubTaskClick}
-                            onSaveEdit={handleSaveEditedSubTask}
-                            onCancelEdit={handleCancelEditSubTask}
-                            isEditing={editingSubTaskId === st.id}
-                            editingText={editingSubTaskText}
-                            onEditingTextChange={setEditingSubTaskText}
-                          />
-                        ))}
+                        <SortableSubTaskItem
+                          key={st.id}
+                          subTask={st}
+                          onRemove={handleRemoveSubTaskTemp}
+                          onEditClick={handleEditSubTaskClick}
+                          onSaveEdit={handleSaveEditedSubTask}
+                          onCancelEdit={handleCancelEditSubTask}
+                          isEditing={editingSubTaskId === st.id}
+                          editingText={editingSubTaskText}
+                          onEditingTextChange={setEditingSubTaskText}
+                        />
+                      ))}
                     </div>
                   </SortableContext>
                 </DndContext>
+
                 <div className="flex gap-2">
                   <Input
                     placeholder="Adicionar sub-tarefa"
                     value={subTaskInputText}
                     onChange={(e) => setSubTaskInputText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddSubTaskTemp()}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleAddSubTaskTemp()
+                    }
                   />
-                  <Button onClick={handleAddSubTaskTemp} disabled={!subTaskInputText.trim()} size="sm">
+                  <Button
+                    onClick={handleAddSubTaskTemp}
+                    disabled={!subTaskInputText.trim()}
+                    size="sm"
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
