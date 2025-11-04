@@ -365,12 +365,14 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
           {/* Tags */}
           <AccordionItem value="tags">
             <AccordionTrigger className="hover:no-underline">
-              <span className="font-semibold">Tags</span>
+              <span className="font-semibold">
+                Tags
               {selectedTagId && (
                 <Badge className="ml-2 bg-blue-500 text-white">
-                  1 selecionada
+                  selecionado
                 </Badge>
-              )}
+              )}  
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <div className="grid gap-4 m-1">
@@ -380,7 +382,7 @@ export const CardForm = forwardRef<CardFormHandle, CardFormProps>(
                     return (
                       <div
                         key={tag.id}
-                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all relative hover:ring-1 ${
+                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all relative hover:ring-1 ${
                           selectedTagId === tag.id
                             ? "ring-2 ring-offset-2 ring-blue-500"
                             : ""
