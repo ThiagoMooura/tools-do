@@ -10,9 +10,10 @@ import {
   SheetTitle,
   SheetTrigger,
   SheetDescription,
+  SheetFooter,
 } from "@/components/ui/sheet";
 import { Plus, MoreVertical, ArrowDownNarrowWide, ArrowUpNarrowWide, TagIcon, Trash2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Card, Priority, SubTask } from "@/hooks/useBoard";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -42,6 +43,16 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { CardForm } from "@/components/ui/cardForm";
+
+interface CardFormHandle {
+  getFormData: () => {
+    title: string;
+    description?: string;
+    priority: Priority;
+    subTasks?: SubTask[];
+    tagId?: string;
+  } | null;
+}
 
 interface ColumnProps {
   columnId: "todo" | "doing" | "done";
@@ -75,6 +86,7 @@ export const Column = React.memo(function Column({
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const cardFormRef = useRef<CardFormHandle>(null);
 
   const handleOpenSheetForEdit = (card: Card) => {
     setEditingCard(card);
@@ -86,17 +98,16 @@ export const Column = React.memo(function Column({
     setIsSheetOpen(true);
   };
 
-  const handleSaveCard = (data: {
-    title: string;
-    description?: string;
-    priority: Priority;
-    subTasks?: SubTask[];
-    tagId?: string;
-  }) => {
+  const handleSaveCard = () => {
+    if (!cardFormRef.current) return;
+    
+    const formData = cardFormRef.current.getFormData();
+    if (!formData) return;
+
     if (editingCard) {
-      editCard(editingCard.id, data);
+      editCard(editingCard.id, formData);
     } else {
-      addCard(data.title, data.priority, data.description, data.subTasks, data.tagId);
+      addCard(formData.title, formData.priority, formData.description, formData.subTasks, formData.tagId);
     }
     setIsSheetOpen(false);
     setEditingCard(null);
@@ -244,7 +255,7 @@ export const Column = React.memo(function Column({
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="right" className="w-[450px] sm:w-[600px] lg:w-[700px] bg-sidebar border-none">
+          <SheetContent side="right"  className="bg-sidebar border-none flex flex-col">
             <SheetHeader>
               <SheetTitle>
                 {editingCard ? "Editar tarefa" : "Nova tarefa"}
@@ -255,12 +266,20 @@ export const Column = React.memo(function Column({
                   : `Preencha as informações para adicionar uma nova to-do à coluna ${title}.`}
               </SheetDescription>
             </SheetHeader>
-            <CardForm
-              initialData={editingCard}
-              columnId={columnId}
-              onSave={handleSaveCard}
-              onCancel={handleCancelForm}
-            />
+            <div className="flex-1 overflow-y-auto">
+              <CardForm
+                ref={cardFormRef}
+                initialData={editingCard}
+              />
+            </div>
+            <SheetFooter className="flex-row justify-end gap-2 border-t">
+              <Button variant="outline" onClick={handleCancelForm}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveCard}>
+                {editingCard ? "Salvar alterações" : "Adicionar tarefa"}
+              </Button>
+            </SheetFooter>
           </SheetContent>
         </Sheet>
 
@@ -287,4 +306,4 @@ export const Column = React.memo(function Column({
       </div>
     </div>
   );
-})
+});
