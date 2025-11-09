@@ -1,3 +1,4 @@
+"use client";
 
 import {
   Card,
@@ -5,7 +6,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,6 @@ import {
   Trash2,
   ArrowRight,
   ArrowLeft,
-  Check,
   Plus,
   MoreVertical,
 } from "lucide-react";
@@ -34,13 +33,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card as CardType, SubTask } from "@/hooks/useBoard";
 import { useBoardContext } from "@/app/contexts/boardContext";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 
 interface Props {
@@ -60,7 +59,6 @@ export function CardBoard({
   onMove,
   onToggleSubTask,
   onAddSubTask,
-  onEditSubTask,
 }: Props) {
   const { activeBoard } = useBoardContext();
   const {
@@ -72,38 +70,23 @@ export function CardBoard({
     isDragging,
   } = useSortable({
     id: card.id,
-    data: {
-      card,
-    },
+    data: { card },
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
-
-  const daysAgo = Math.floor(
-    (Date.now() - card.createdAt) / (1000 * 60 * 60 * 24)
-  );
-  const formattedDate =
-    daysAgo === 0
-      ? "Hoje"
-      : daysAgo === 1
-      ? "1 dia atrás"
-      : `${daysAgo} dias atrás`;
-
-  const color =
-    card.priority === "high"
-      ? "bg-purple-700"
-      : card.priority === "medium"
-      ? "bg-amber-600"
-      : "bg-green-600";
-
+  const cardRef = useRef<HTMLDivElement>(null);
   const [newSubTaskText, setNewSubTaskText] = useState("");
-  const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
-  const [editingSubTaskText, setEditingSubTaskText] = useState("");
   const [showAddSubTaskInput, setShowAddSubTaskInput] = useState(false);
+
+  // Fechar input ao clicar fora do card
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setShowAddSubTaskInput(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleAddSubTask = () => {
     if (newSubTaskText.trim()) {
@@ -113,39 +96,46 @@ export function CardBoard({
     }
   };
 
-  const handleEditSubTask = (subTaskId: string, currentTitle: string) => {
-    setEditingSubTaskId(subTaskId);
-    setEditingSubTaskText(currentTitle);
-  };
+  const daysAgo = Math.floor((Date.now() - card.createdAt) / (1000 * 60 * 60 * 24));
+  const formattedDate =
+    daysAgo === 0 ? "Hoje" : daysAgo === 1 ? "1 dia atrás" : `${daysAgo} dias atrás`;
 
-  const handleSaveEditedSubTask = (subTaskId: string) => {
-    if (editingSubTaskText.trim()) {
-      onEditSubTask(card.id, subTaskId, editingSubTaskText);
-      setEditingSubTaskId(null);
-      setEditingSubTaskText("");
-    }
-  };
+  const color =
+    card.priority === "high"
+      ? "bg-purple-700"
+      : card.priority === "medium"
+      ? "bg-amber-600"
+      : "bg-green-600";
 
-  const handleCancelEditSubTask = () => {
-    setEditingSubTaskId(null);
-    setEditingSubTaskText("");
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    cursor: isDragging ? "grabbing" : "grab",
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group">
-      <Card className="shadow-md hover:shadow-lg transition-shadow duration-200 border-none">
-        <CardHeader className="gap-0.5">
-          <div className="flex flex-row justify-between items-center w-full ">
+      <Card
+        ref={cardRef}
+        className="shadow-md hover:shadow-lg transition-shadow duration-200 border-none select-none"
+      >
+        <CardHeader className="gap-0.5 cursor-default pointer-events-none">
+          <div className="flex flex-row justify-between items-center w-full">
             <div className="flex gap-2 items-center">
               <Badge className={`${color} text-white`}>
                 {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
               </Badge>
               {card.tagId && activeBoard?.availableTags && (
                 <Badge
-                  style={{ backgroundColor: activeBoard.availableTags.find(tag => tag.id === card.tagId)?.color || "#6B7280" }}
+                  style={{
+                    backgroundColor:
+                      activeBoard.availableTags.find((tag) => tag.id === card.tagId)?.color ||
+                      "#6B7280",
+                  }}
                   className="text-white"
                 >
-                  {activeBoard.availableTags.find(tag => tag.id === card.tagId)?.name}
+                  {activeBoard.availableTags.find((tag) => tag.id === card.tagId)?.name}
                 </Badge>
               )}
             </div>
@@ -153,58 +143,36 @@ export function CardBoard({
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="cursor-grab active:cursor-grabbing">
           <CardTitle className="text-xl">{card.title}</CardTitle>
           {card.description && (
-            <CardDescription className="text-sm">
-              {card.description}
-            </CardDescription>
+            <CardDescription className="text-sm">{card.description}</CardDescription>
           )}
 
-          {card.subTasks && card.subTasks.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1">
-              {card.subTasks.map((st: SubTask) => (
-                <div
-                  key={st.id}
-                  className="flex items-center gap-2"
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                    ${
-                      st.done
-                        ? "bg-blue-600 border-blue-600"
-                        : "border-gray-400 bg-white"
-                    }`}
+          {/* Sub-tarefas */}
+          {(card.subTasks ?? []).length > 0 && (
+            <div className="mt-2 flex flex-col gap-1 cursor-default">
+              {(card.subTasks ?? []).map((st: SubTask) => (
+                <div key={st.id} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={st.done}
+                    onCheckedChange={() => onToggleSubTask(card.id, st.id)}
+                    className="h-4 w-4"
+                  />
+                  <span
+                    className={`flex-1 ${
+                      st.done ? "text-muted-foreground line-through" : ""
+                    } cursor-pointer`}
                     onClick={() => onToggleSubTask(card.id, st.id)}
                   >
-                    {st.done && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  {editingSubTaskId === st.id ? (
-                    <Input
-                      value={editingSubTaskText}
-                      onChange={(e) => setEditingSubTaskText(e.target.value)}
-                      onBlur={() => handleSaveEditedSubTask(st.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveEditedSubTask(st.id);
-                        if (e.key === 'Escape') handleCancelEditSubTask();
-                      }}
-                      autoFocus
-                      className="flex-1"
-                    />
-                  ) : (
-                    <span
-                      className={`flex-1 ${st.done ? "text-muted-foreground " : ""} cursor-pointer`}
-                      onClick={() => handleEditSubTask(st.id, st.title)}
-                    >
-                      {st.title}
-                    </span>
-                  )}
+                    {st.title}
+                  </span>
                 </div>
               ))}
             </div>
           )}
-          {/* Moved outside the conditional for existing sub-tasks */}
-          {card.subTasks && card.subTasks.length > 0 && (
+
+          {/* Adicionar nova sub-tarefa */}
           <div className="mt-2">
             {showAddSubTaskInput ? (
               <div className="flex gap-2">
@@ -212,10 +180,14 @@ export function CardBoard({
                   placeholder="Adicionar nova sub-tarefa"
                   value={newSubTaskText}
                   onChange={(e) => setNewSubTaskText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddSubTask()}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddSubTask()}
                   autoFocus
                 />
-                <Button onClick={handleAddSubTask} disabled={!newSubTaskText.trim()} size="icon">
+                <Button
+                  onClick={handleAddSubTask}
+                  disabled={!newSubTaskText.trim()}
+                  size="icon"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -225,17 +197,16 @@ export function CardBoard({
                 className="w-full justify-start text-muted-foreground"
                 onClick={() => setShowAddSubTaskInput(true)}
               >
-                <Plus className="h-4 w-4 mr-2" /> Adicionar sub-tarefa
+                <Plus className="h-4 w-4 mr-1" /> Adicionar sub-tarefa
               </Button>
             )}
           </div>
-          )}
         </CardContent>
       </Card>
 
       {/* Floating action buttons */}
       <div className="absolute -right-10 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
-      <DropdownMenu>
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="bg-background/80 backdrop-blur-sm">
               <MoreVertical />
@@ -243,25 +214,38 @@ export function CardBoard({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => onMove(card.id, card.column === "doing" ? "todo" : "doing")}
+              onClick={() =>
+                onMove(card.id, card.column === "doing" ? "todo" : "doing")
+              }
               disabled={card.column === "todo"}
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Mover para a esquerda
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => onMove(card.id, card.column === "todo" ? "doing" : "done")}
+              onClick={() =>
+                onMove(card.id, card.column === "todo" ? "doing" : "done")
+              }
               disabled={card.column === "done"}
             >
               <ArrowRight className="w-4 h-4 mr-2" /> Mover para a direita
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" size="icon" className="bg-background/80 backdrop-blur-sm" onClick={onEdit}>
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-background/80 backdrop-blur-sm"
+          onClick={onEdit}
+        >
           <Edit />
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="icon" className="bg-background/80 backdrop-blur-sm">
+            <Button
+              variant="destructive"
+              size="icon"
+              className="bg-background/80 backdrop-blur-sm"
+            >
               <Trash2 />
             </Button>
           </AlertDialogTrigger>
@@ -288,4 +272,3 @@ export function CardBoard({
     </div>
   );
 }
-
